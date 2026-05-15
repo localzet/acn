@@ -1,0 +1,90 @@
+[build-system]
+requires = ["hatchling>=1.25"]
+build-backend = "hatchling.build"
+
+[project]
+name = "adaptive-core-network"
+version = "0.1.0"
+description = "Adaptive Core Network modular monolith workspace."
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi>=0.115,<1.0",
+    "pydantic-settings>=2.7,<3.0",
+    "psycopg[binary]>=3.2,<4.0",
+    "redis>=5.2,<6.0",
+    "sqlalchemy>=2.0,<3.0",
+    "uvicorn[standard]>=0.34,<1.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "black>=24.10,<25.0",
+    "httpx>=0.28,<1.0",
+    "mypy>=1.14,<2.0",
+    "pytest>=8.3,<9.0",
+    "ruff>=0.9,<1.0",
+]
+ml = [
+    "mlflow>=2.19,<3.0",
+    "torch>=2.5,<3.0",
+    "torchvision>=0.20,<1.0",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = [
+    "packages/acn/src/acn",
+    "apps/api/src/acn_api",
+    "apps/worker/src/acn_worker",
+]
+
+[tool.black]
+line-length = 100
+target-version = ["py312"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+src = ["packages/acn/src", "apps/api/src", "apps/worker/src", "tests"]
+
+[tool.ruff.lint]
+select = [
+    "A",
+    "ANN",
+    "B",
+    "C4",
+    "E",
+    "F",
+    "I",
+    "N",
+    "RUF",
+    "S",
+    "SIM",
+    "UP",
+    "W",
+]
+ignore = [
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**/*.py" = ["S101"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+warn_unreachable = true
+pretty = true
+mypy_path = [
+    "packages/acn/src",
+    "apps/api/src",
+    "apps/worker/src",
+]
+packages = ["acn", "acn_api", "acn_worker"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = [
+    "packages/acn/src",
+    "apps/api/src",
+    "apps/worker/src",
+]
