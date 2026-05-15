@@ -1,4 +1,4 @@
-.PHONY: install lint format type-check test check compose-up compose-down api worker web
+.PHONY: install lint format type-check test check compose-up compose-down api worker web train-fashion-mnist
 
 PYTHON ?= python3.12
 PIP ?= $(PYTHON) -m pip
@@ -38,3 +38,5 @@ worker:
 web:
 	cd apps/web && npm run dev
 
+train-fashion-mnist:
+	$(PYTHON) scripts/train_fashion_mnist.py

@@ -46,6 +46,27 @@ ACN starts as a modular monolith with explicit application boundaries:
 
 This keeps the system deployable as a small local stack while preserving clean seams for trainer, version store, controller and experiment tracking modules.
 
+## Trainer Core
+
+The trainer core lives in `packages/acn/src/acn/training` and is independent from API, worker and UI runtimes.
+
+It provides:
+
+- typed trainer configuration;
+- configurable optimizers and schedulers;
+- mixed precision on CUDA devices;
+- checkpoint save/load;
+- layer freeze/unfreeze helpers;
+- train and validation loops.
+
+Run the lightweight Fashion-MNIST example:
+
+```bash
+make train-fashion-mnist
+```
+
+The example stores downloaded datasets under `data/` and checkpoints under `checkpoints/fashion-mnist/`.
+
 ## Requirements
 
 - Python 3.12

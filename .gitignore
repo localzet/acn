@@ -17,6 +17,7 @@ node_modules/
 dist/
 coverage/
 *.tsbuildinfo
+data/
 
 checkpoints/*
 !checkpoints/.gitkeep
