@@ -1,0 +1,26 @@
+{
+  "scenario_id": "fashion-mnist-incremental-demo",
+  "dataset": "Fashion-MNIST",
+  "stages": [
+    {
+      "id": "fashion-classes-0-1",
+      "source_name": "fashion-mnist",
+      "class_ids": [0, 1],
+      "replay_ratio": 0.0
+    },
+    {
+      "id": "fashion-classes-2-3",
+      "source_name": "fashion-mnist",
+      "class_ids": [2, 3],
+      "replay_ratio": 0.25
+    },
+    {
+      "id": "fashion-domain-shift",
+      "source_name": "fashion-mnist",
+      "domain_shift": "fashion-mnist-noisy",
+      "class_ids": [0, 1, 2, 3],
+      "replay_ratio": 0.2
+    }
+  ]
+}
+

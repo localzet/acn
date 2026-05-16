@@ -126,6 +126,37 @@ Run the Citadel simulation:
 make simulate-citadel
 ```
 
+## Continual Learning Pipeline
+
+The continual learning pipeline lives in `packages/acn/src/acn/continual`.
+
+It provides:
+
+- reusable `IDataSource` abstractions;
+- image dataset sources with class filtering;
+- synthetic domain shift sources;
+- configurable dataset stages;
+- incremental class introduction tracking;
+- replay buffer support;
+- forgetting, retention and adaptation metrics;
+- model evaluation utilities that remain decoupled from the trainer.
+
+Example configs live in `configs/continual`.
+
+Run the Fashion-MNIST scenario demo:
+
+```bash
+make demo-continual-fashion
+```
+
+Typical experiment flow:
+
+1. Build a `ContinualLearningScenario` from stage configs.
+2. For each stage, build a stage dataset and optionally mix replay samples.
+3. Train with the existing trainer using normal `DataLoader` objects.
+4. Evaluate predictions through `ContinualEvaluationPipeline`.
+5. Feed metrics into the adaptive controller and route critical actions through Citadel.
+
 ## Requirements
 
 - Python 3.12

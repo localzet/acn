@@ -1,0 +1,18 @@
+{
+  "scenario_id": "split-cifar100-5x20",
+  "dataset": "Split CIFAR-100",
+  "stages": [
+    {
+      "id": "split-00",
+      "source_name": "cifar100",
+      "class_ids": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+    },
+    {
+      "id": "split-01",
+      "source_name": "cifar100",
+      "class_ids": [10, 11, 12, 13, 14, 15, 16, 17, 18, 19],
+      "replay_ratio": 0.2
+    }
+  ]
+}
+
