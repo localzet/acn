@@ -1,4 +1,4 @@
-.PHONY: install lint format type-check test check migrate compose-up compose-down api worker web train-fashion-mnist
+.PHONY: install lint format type-check test check migrate compose-up compose-down api worker web train-fashion-mnist simulate-controller
 
 PYTHON ?= python3.12
 PIP ?= $(PYTHON) -m pip
@@ -43,3 +43,6 @@ web:
 
 train-fashion-mnist:
 	$(PYTHON) scripts/train_fashion_mnist.py
+
+simulate-controller:
+	$(PYTHON) scripts/controller/simulate_rule_based_controller.py

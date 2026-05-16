@@ -86,6 +86,26 @@ Apply database migrations:
 make migrate
 ```
 
+## Adaptive Controller
+
+The rule-based adaptive controller lives in `packages/acn/src/acn/controller`.
+
+It analyzes training metrics and returns explainable decisions without mutating trainer, versioning or model state directly.
+
+Supported actions:
+
+- rollback;
+- decrease or increase learning rate;
+- freeze or unfreeze layers;
+- create an experimental branch;
+- continue training.
+
+Run the controller simulation:
+
+```bash
+make simulate-controller
+```
+
 ## Requirements
 
 - Python 3.12
