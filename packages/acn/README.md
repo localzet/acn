@@ -3,3 +3,5 @@
 Internal Python package for shared configuration, domain contracts, services, infrastructure adapters and reusable training primitives.
 
 `acn.training` is intentionally runtime-agnostic: it does not depend on FastAPI, worker internals or frontend code.
+
+`acn.versioning` stores Git-like training evolution metadata through a repository interface and SQLAlchemy persistence.

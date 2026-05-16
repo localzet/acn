@@ -67,6 +67,25 @@ make train-fashion-mnist
 
 The example stores downloaded datasets under `data/` and checkpoints under `checkpoints/fashion-mnist/`.
 
+## Training Version Store
+
+Git-like training evolution state lives in `packages/acn/src/acn/versioning`.
+
+It provides:
+
+- stable immutable checkpoint metadata;
+- commits with parent-child relationships;
+- named branches with independent heads;
+- rollback by moving a branch head to a reachable ancestor commit;
+- commit graph nodes and edges for future dashboard visualization;
+- SQLAlchemy repository implementation backed by PostgreSQL.
+
+Apply database migrations:
+
+```bash
+make migrate
+```
+
 ## Requirements
 
 - Python 3.12

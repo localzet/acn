@@ -1,10 +1,10 @@
-.PHONY: install lint format type-check test check compose-up compose-down api worker web train-fashion-mnist
+.PHONY: install lint format type-check test check migrate compose-up compose-down api worker web train-fashion-mnist
 
 PYTHON ?= python3.12
 PIP ?= $(PYTHON) -m pip
 
 install:
-	$(PIP) install -e ".[dev,ml]"
+	$(PIP) install -e ".[dev,ml]" --break-system-packages
 	cd apps/web && npm install
 
 lint:
@@ -22,6 +22,9 @@ test:
 	$(PYTHON) -m pytest
 
 check: lint type-check test
+
+migrate:
+	$(PYTHON) -m alembic upgrade head
 
 compose-up:
 	docker compose up --build
