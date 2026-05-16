@@ -157,6 +157,20 @@ Typical experiment flow:
 4. Evaluate predictions through `ContinualEvaluationPipeline`.
 5. Feed metrics into the adaptive controller and route critical actions through Citadel.
 
+## Experiment Orchestration
+
+Experiment orchestration lives in `packages/acn/src/acn/orchestration`.
+
+It coordinates experiment lifecycle, stage transitions, checkpoint commits, branch creation, rollback and controller decisions while keeping trainer, evaluator and controller decoupled.
+
+Run the orchestration lifecycle example:
+
+```bash
+make demo-orchestration
+```
+
+Detailed diagrams and event flow are documented in `docs/13_orchestration.md`.
+
 ## Requirements
 
 - Python 3.12

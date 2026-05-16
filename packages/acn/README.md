@@ -9,3 +9,5 @@ Internal Python package for shared configuration, domain contracts, services, in
 `acn.citadel` validates critical actions and records audit logs before orchestration code mutates training or versioning state.
 
 `acn.continual` provides dataset-stage orchestration, replay and continual evaluation primitives for adaptive image classification under domain shift.
+
+`acn.orchestration` coordinates experiment lifecycle, stage execution, commits, branches, rollback and controller decisions.

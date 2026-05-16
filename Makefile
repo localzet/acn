@@ -1,4 +1,4 @@
-.PHONY: install lint format type-check test check migrate compose-up compose-down api worker web train-fashion-mnist simulate-controller simulate-citadel demo-continual-fashion
+.PHONY: install lint format type-check test check migrate compose-up compose-down api worker web train-fashion-mnist simulate-controller simulate-citadel demo-continual-fashion demo-orchestration
 
 PYTHON ?= python3.12
 PIP ?= $(PYTHON) -m pip
@@ -52,3 +52,6 @@ simulate-citadel:
 
 demo-continual-fashion:
 	$(PYTHON) scripts/continual/fashion_mnist_demo_scenario.py
+
+demo-orchestration:
+	$(PYTHON) scripts/orchestration/example_experiment_lifecycle.py
