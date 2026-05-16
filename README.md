@@ -106,6 +106,26 @@ Run the controller simulation:
 make simulate-controller
 ```
 
+## Citadel Safety Layer
+
+The Citadel safety layer lives in `packages/acn/src/acn/citadel`.
+
+It validates critical actions before execution and records audit logs for allowed, denied and override-approved decisions.
+
+It enforces:
+
+- rollback target reachability;
+- stable checkpoint immutability;
+- unsafe overwrite prevention;
+- learning-rate and layer-action policy validation;
+- explicit human override approval for supported risky actions.
+
+Run the Citadel simulation:
+
+```bash
+make simulate-citadel
+```
+
 ## Requirements
 
 - Python 3.12
