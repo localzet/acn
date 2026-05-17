@@ -171,6 +171,20 @@ make demo-orchestration
 
 Detailed diagrams and event flow are documented in `docs/13_orchestration.md`.
 
+## Dashboard Frontend
+
+The dashboard frontend lives in `apps/web` and uses React, TypeScript, Tailwind, React Flow and Recharts.
+
+It consumes FastAPI REST endpoints for snapshots and override submissions, then listens for live updates through SSE with WebSocket fallback.
+
+Run the dashboard:
+
+```bash
+make web
+```
+
+The frontend integration contract is documented in `docs/14_dashboard_frontend.md`.
+
 ## Requirements
 
 - Python 3.12

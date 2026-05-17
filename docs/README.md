@@ -14,3 +14,4 @@ Included:
 - Continual learning strategy
 - Video-stream expansion foundation
 - Experiment orchestration flow
+- Dashboard frontend integration
