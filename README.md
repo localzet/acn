@@ -284,6 +284,8 @@ Quality gates:
 make lint
 make type-check
 make test
+make coverage
 ```
 
 Python code is checked with Ruff, Black and MyPy in strict mode. Frontend code is checked with TypeScript.
+Coverage reports are written under `reports/coverage/`.

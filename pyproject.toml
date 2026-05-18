@@ -24,6 +24,7 @@ dev = [
     "httpx>=0.28,<1.0",
     "mypy>=1.14,<2.0",
     "pytest>=8.3,<9.0",
+    "pytest-cov>=6.0,<7.0",
     "ruff>=0.9,<1.0",
 ]
 ml = [
@@ -89,3 +90,25 @@ pythonpath = [
     "apps/api/src",
     "apps/worker/src",
 ]
+
+[tool.coverage.run]
+branch = true
+source = [
+    "packages/acn/src/acn",
+    "apps/api/src/acn_api",
+    "apps/worker/src/acn_worker",
+]
+omit = [
+    "*/__init__.py",
+]
+
+[tool.coverage.report]
+show_missing = true
+skip_empty = true
+fail_under = 70
+
+[tool.coverage.html]
+directory = "reports/coverage/html"
+
+[tool.coverage.xml]
+output = "reports/coverage/coverage.xml"

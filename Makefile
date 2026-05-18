@@ -1,4 +1,4 @@
-.PHONY: install lint format type-check test check migrate compose-up compose-down api worker web train-fashion-mnist simulate-controller simulate-citadel demo-continual-fashion demo-orchestration e2e-experiment research-benchmark demo-assets demo-mode
+.PHONY: install lint format type-check test coverage check migrate compose-up compose-down api worker web train-fashion-mnist simulate-controller simulate-citadel demo-continual-fashion demo-orchestration e2e-experiment research-benchmark demo-assets demo-mode
 
 PYTHON ?= python3.12
 PIP ?= $(PYTHON) -m pip
@@ -20,6 +20,9 @@ type-check:
 
 test:
 	$(PYTHON) -m pytest
+
+coverage:
+	$(PYTHON) -m pytest --cov --cov-report=term-missing --cov-report=html --cov-report=xml
 
 check: lint type-check test
 

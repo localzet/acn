@@ -19,3 +19,4 @@ Included:
 - End-to-end experiment pipeline
 - Research evaluation utilities
 - Demo mode
+- Testing architecture
