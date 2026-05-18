@@ -20,3 +20,4 @@ Included:
 - Research evaluation utilities
 - Demo mode
 - Testing architecture
+- Sync execution model

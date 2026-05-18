@@ -1,5 +1,3 @@
-import asyncio
-
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
@@ -23,7 +21,7 @@ from acn.versioning.repository import SqlAlchemyTrainingVersionRepository
 
 
 class DemoRunner(StageTrainingRunner):
-    async def run_stage(self, stage: DatasetStage) -> StageTrainingResult:
+    def run_stage(self, stage: DatasetStage) -> StageTrainingResult:
         return StageTrainingResult(
             checkpoint_uri=f"s3://mlflow/demo/{stage.id}.pt",
             checkpoint_hash=f"sha256:{stage.id}",
@@ -32,7 +30,7 @@ class DemoRunner(StageTrainingRunner):
         )
 
 
-async def main() -> None:
+def main() -> None:
     engine = create_engine("sqlite+pysqlite:///:memory:", future=True)
     Base.metadata.create_all(engine)
     session_factory = sessionmaker(bind=engine, expire_on_commit=False, future=True)
@@ -77,7 +75,7 @@ async def main() -> None:
             ),
         )
 
-        completed = await pipeline.run(experiment=experiment, stages=stages)
+        completed = pipeline.run(experiment=experiment, stages=stages)
         history = version_repository.list_branch_history("main")
         executions = state_repository.list_stage_executions(experiment.id)
 
@@ -86,4 +84,4 @@ async def main() -> None:
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    main()

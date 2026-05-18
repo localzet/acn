@@ -364,7 +364,7 @@ sequenceDiagram
     EM->>VR: ensure branch exists
     EM->>EP: run experiment with stages
     EP->>STM: start stage
-    EP->>TS: await run_stage(stage)
+    EP->>TS: run_stage(stage)
     TS-->>EP: StageTrainingResult
     EP->>VR: create checkpoint
     EP->>VR: create commit
@@ -590,7 +590,7 @@ Purpose: coordinate training stages, version commits, controller decisions, bran
 Responsibilities:
 - Create/start/complete/fail experiments.
 - Start/complete/fail stage executions.
-- Await async training stage runner.
+- Run synchronous training stage runner.
 - Commit stage results to version store.
 - Execute controller decisions via Citadel and rollback coordinator.
 
@@ -612,11 +612,11 @@ Internal dependencies:
 
 Architectural decisions:
 - Training is abstracted behind `StageTrainingRunner` protocol.
-- Orchestration is async at the stage-running boundary.
+- Orchestration is synchronous at the stage-running boundary.
 - Decision execution is separated from decision generation.
 
 Known limitations:
-- Sync SQLAlchemy calls are made inside async orchestration.
+- SQLAlchemy repository calls are synchronous and align with synchronous orchestration.
 - `best_commit_id` currently defaults to first commit and does not compare metric quality in `EvolutionPipeline`.
 - Decision results for LR/freeze/unfreeze are validated but not applied to a live trainer.
 - No durable event bus or worker job state.
@@ -1198,7 +1198,7 @@ Meaningful integration coverage exists for:
 
 ### Architectural Compromises
 
-- Sync SQLAlchemy repositories are called from async orchestration.
+- SQLAlchemy repositories and orchestration are both synchronous in the Stage 1 execution model.
 - Citadel enforcement is by convention at service layer, not guaranteed across all repository methods.
 - Experiment state stores branch/commit identifiers as strings without DB foreign keys.
 - `DecisionExecutor` validates LR/freeze/unfreeze but does not apply them to a trainer session.

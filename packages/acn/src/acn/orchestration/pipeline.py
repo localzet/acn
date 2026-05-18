@@ -32,7 +32,7 @@ class EvolutionPipeline:
         self._decision_executor = decision_executor
         self._transition_manager = transition_manager
 
-    async def run(
+    def run(
         self,
         *,
         experiment: ExperimentRecord,
@@ -49,7 +49,7 @@ class EvolutionPipeline:
                     experiment=current_experiment,
                     stage=stage,
                 )
-                result = await self._training_session.run_stage(stage)
+                result = self._training_session.run_stage(stage)
                 commit = self._commit_stage(
                     experiment=current_experiment,
                     stage=stage,

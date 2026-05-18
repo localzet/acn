@@ -353,7 +353,7 @@ flowchart TD
 
 Explanation:
 - `EvolutionPipeline` is the central application coordinator.
-- `TrainingSession` adapts an async stage runner; it does not know trainer internals.
+- `TrainingSession` adapts a synchronous stage runner; it does not know trainer internals.
 - `DecisionExecutor` is responsible for routing controller decisions into safe mutations.
 
 ## 9. Orchestration Sequence
@@ -373,7 +373,7 @@ sequenceDiagram
     M-->>P: ExperimentRecord
     P->>S: start_stage(experiment, stage)
     S-->>P: StageExecutionRecord
-    P->>T: await run_stage(stage)
+    P->>T: run_stage(stage)
     T-->>P: StageTrainingResult
     P->>V: create_checkpoint(uri, hash, metadata)
     V-->>P: StableCheckpointRecord
@@ -740,4 +740,3 @@ Explanation:
 - The codebase has strong internal boundaries.
 - Runtime integration is the main unfinished area.
 - External reviewers should distinguish implemented contracts from operationally wired behavior.
-

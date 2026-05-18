@@ -47,9 +47,8 @@ sequenceDiagram
 
 ## Boundaries
 
-- `TrainingSession` adapts a runner to async orchestration.
+- `TrainingSession` adapts a synchronous stage runner to orchestration.
 - `EvolutionPipeline` owns ordering and state transitions.
 - `DecisionExecutor` validates and routes controller decisions.
 - `RollbackCoordinator` is the only rollback executor.
 - `Trainer`, evaluator and controller remain decoupled from persistence and orchestration.
-

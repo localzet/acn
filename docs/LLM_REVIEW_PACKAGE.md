@@ -107,7 +107,7 @@ Boundary quality:
 - Good: frontend does not import backend packages.
 - Good: controller is execution-agnostic.
 - Acceptable: Citadel depends on controller action enum and version repository.
-- Risky: orchestration is async but uses sync repositories.
+- Stage 1: orchestration and repositories are sync-first.
 - Weak: API does not yet bind repositories to dashboard contracts.
 
 ## 3. Runtime Architecture
@@ -391,7 +391,7 @@ sequenceDiagram
 
     M->>V: ensure branch exists
     P->>S: start stage
-    P->>T: await run_stage
+    P->>T: run_stage
     T-->>P: StageTrainingResult
     P->>V: create checkpoint + commit
     P->>S: complete stage
@@ -422,7 +422,7 @@ Strengths:
 
 Risks:
 
-- Sync DB repositories inside async pipeline.
+- Sync DB repositories aligned with sync pipeline.
 - No explicit transaction for checkpoint + commit + experiment update.
 - `best_commit_id` update is simplistic.
 - LR/freeze/unfreeze decisions are validated but not applied to active trainer.
@@ -583,7 +583,7 @@ Critical:
 High:
 
 - No transaction boundary across version/orchestration state mutations.
-- Sync repositories in async orchestration.
+- Sync repositories in sync orchestration.
 - Branch creation can name-collide on repeated source commit.
 - `best_commit_id` logic is underdeveloped.
 - Neural policy has no real training corpus.
@@ -609,7 +609,7 @@ Low:
 | Provision Redis/MLflow/MinIO before integration | Infra appears more complete than code reality | Should these be marked experimental until wired? |
 | Synthetic E2E as default reproducibility path | Tests pass without proving real ML behavior | Is there a separate real-data smoke test? |
 | Citadel enforcement by convention | Direct repository calls can bypass safety layer | Should critical repository mutations require Citadel context? |
-| Sync SQLAlchemy in async pipeline | Can block event loop under API usage | Should orchestration run only in worker thread/process? |
+| Long-running sync orchestration | Can block API threads if run inside request handlers | Should orchestration run only in worker process/thread? |
 | Free-form metadata dictionaries | Flexible but weakly validated | Which metadata deserves typed schemas? |
 | Static dashboard contract | UI can drift from backend reality | Should OpenAPI-generated TS types be used? |
 | Neural controller before data corpus | Can look advanced but be untrustworthy | Should it remain experimental behind feature flag? |
@@ -702,4 +702,3 @@ Ask these questions first:
 6. Add PostgreSQL integration tests.
 7. Add one real Fashion-MNIST smoke E2E separate from synthetic CI.
 8. Add frontend tests for API integration and empty/error states.
-

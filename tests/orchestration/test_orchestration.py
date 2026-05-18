@@ -1,5 +1,3 @@
-import asyncio
-
 from sqlalchemy.orm import Session
 
 from acn.citadel import CitadelSafetyLayer, SqlAlchemyAuditLogRepository
@@ -24,7 +22,7 @@ from acn.versioning.repository import SqlAlchemyTrainingVersionRepository
 
 
 class StaticRunner(StageTrainingRunner):
-    async def run_stage(self, stage: DatasetStage) -> StageTrainingResult:
+    def run_stage(self, stage: DatasetStage) -> StageTrainingResult:
         return StageTrainingResult(
             checkpoint_uri=f"s3://mlflow/{stage.id}.pt",
             checkpoint_hash=f"sha:{stage.id}",
@@ -197,11 +195,9 @@ def test_evolution_pipeline_runs_stages_and_commits(session: Session) -> None:
         transition_manager=StageTransitionManager(state_repository),
     )
 
-    completed = asyncio.run(
-        pipeline.run(
-            experiment=experiment,
-            stages=(_stage("s1"), _stage("s2")),
-        )
+    completed = pipeline.run(
+        experiment=experiment,
+        stages=(_stage("s1"), _stage("s2")),
     )
 
     history = version_repository.list_branch_history("main")

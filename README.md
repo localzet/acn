@@ -39,7 +39,7 @@ Business logic is intentionally not implemented yet.
 ACN starts as a modular monolith with explicit application boundaries:
 
 - `apps/api` owns HTTP concerns and depends on shared application services through `packages/acn`.
-- `apps/worker` owns asynchronous execution concerns and consumes the same shared package.
+- `apps/worker` owns long-running execution concerns and consumes the same shared package.
 - `packages/acn` is the internal Python package for configuration, domain contracts, services and infrastructure adapters.
 - `apps/web` is isolated as a TypeScript frontend and talks to the API over HTTP.
 - `infra/docker` contains runtime images while `docker-compose.yml` wires local infrastructure.
