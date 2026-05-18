@@ -15,11 +15,14 @@ import {
 } from "lucide-react";
 import { useMemo, useState } from "react";
 
+import { appConfig } from "./config";
+import { useDemoPlayback } from "./hooks/useDemoPlayback";
 import { useDashboardData } from "./hooks/useDashboardData";
 import { OverrideConsole } from "./views/OverrideConsole";
 import { BranchGraphView } from "./views/BranchGraphView";
 import { CommitGraphView } from "./views/CommitGraphView";
 import { ControllerDecisionsView } from "./views/ControllerDecisionsView";
+import { DemoPresentationView } from "./views/DemoPresentationView";
 import { ExperimentInspectorView } from "./views/ExperimentInspectorView";
 import { LiveLogsView } from "./views/LiveLogsView";
 import { MetricsTimelineView } from "./views/MetricsTimelineView";
@@ -39,9 +42,14 @@ const navItems = [
 type ViewId = (typeof navItems)[number]["id"];
 
 export function App() {
+  const demoPlayback = useDemoPlayback();
   const [activeView, setActiveView] = useState<ViewId>("commits");
   const [darkMode, setDarkMode] = useState(true);
   const { snapshot, connection, error, refresh, submitOverride } = useDashboardData();
+
+  if (appConfig.demoMode) {
+    return <DemoPresentationView playback={demoPlayback} />;
+  }
 
   const activeExperiment = snapshot.experiments[0];
   const stats = useMemo(

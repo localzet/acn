@@ -105,3 +105,18 @@ export type OverridePayload = {
   reason: string;
   ticketId?: string;
 };
+
+export type DemoPlaybackStep = {
+  id: string;
+  title: string;
+  subtitle: string;
+  focus:
+    | "experiment"
+    | "commit"
+    | "metrics"
+    | "branch"
+    | "forgetting"
+    | "rollback"
+    | "override"
+    | "summary";
+};

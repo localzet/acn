@@ -1,4 +1,4 @@
-.PHONY: install lint format type-check test check migrate compose-up compose-down api worker web train-fashion-mnist simulate-controller simulate-citadel demo-continual-fashion demo-orchestration
+.PHONY: install lint format type-check test check migrate compose-up compose-down api worker web train-fashion-mnist simulate-controller simulate-citadel demo-continual-fashion demo-orchestration e2e-experiment research-benchmark demo-assets demo-mode
 
 PYTHON ?= python3.12
 PIP ?= $(PYTHON) -m pip
@@ -55,3 +55,15 @@ demo-continual-fashion:
 
 demo-orchestration:
 	$(PYTHON) scripts/orchestration/example_experiment_lifecycle.py
+
+e2e-experiment:
+	$(PYTHON) scripts/experiments/run_e2e_experiment.py
+
+research-benchmark:
+	$(PYTHON) scripts/experiments/run_research_benchmark.py
+
+demo-assets:
+	$(PYTHON) scripts/demo/generate_demo_assets.py
+
+demo-mode: demo-assets
+	cd apps/web && VITE_DEMO_MODE=true npm run dev

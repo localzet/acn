@@ -187,6 +187,41 @@ make demo-orchestration
 
 Detailed diagrams and event flow are documented in `docs/13_orchestration.md`.
 
+## End-to-End Experiment Pipeline
+
+Run a reproducible continual-learning integration experiment:
+
+```bash
+make e2e-experiment
+```
+
+The default config is `configs/experiments/acn_e2e_reproducible.json`. It produces metrics,
+commit and branch graphs, forgetting/adaptation plots, rollback events, a Markdown report and
+an SVG dashboard screenshot under `experiments/acn-e2e-fashion-cifar10c/`.
+
+Run the research benchmark comparison:
+
+```bash
+make research-benchmark
+```
+
+The benchmark compares standard training, manual tuning, rule-based ACN and neural-controller
+ACN, then exports CSV summaries, statistical comparisons, plots and a reproducible report.
+
+## Demo Mode
+
+Run a polished reproducible presentation workflow:
+
+```bash
+make demo-mode
+```
+
+Generate demo screenshots/assets without starting the web server:
+
+```bash
+make demo-assets
+```
+
 ## Dashboard Frontend
 
 The dashboard frontend lives in `apps/web` and uses React, TypeScript, Tailwind, React Flow and Recharts.

@@ -1,0 +1,45 @@
+{
+  "experiment_id": "acn-e2e-fashion-cifar10c",
+  "seed": 20260518,
+  "backend": "synthetic",
+  "output_dir": "experiments/acn-e2e-fashion-cifar10c",
+  "samples_per_class": 8,
+  "replay_capacity": 128,
+  "replay_samples_per_class": 4,
+  "learning_rate": 0.001,
+  "screenshot_export": true,
+  "stages": [
+    {
+      "id": "baseline-fashion-0-1",
+      "dataset": "fashion-mnist",
+      "class_ids": [0, 1],
+      "epochs": 1,
+      "replay_ratio": 0.0
+    },
+    {
+      "id": "incremental-fashion-2-3",
+      "dataset": "fashion-mnist",
+      "class_ids": [2, 3],
+      "epochs": 1,
+      "replay_ratio": 0.25,
+      "force_branch": true
+    },
+    {
+      "id": "domain-shift-cifar10c-0-3",
+      "dataset": "cifar-10-c",
+      "class_ids": [0, 1, 2, 3],
+      "epochs": 1,
+      "replay_ratio": 0.2,
+      "domain_shift": "gaussian_noise"
+    },
+    {
+      "id": "rollback-demo-fashion-shift",
+      "dataset": "fashion-mnist",
+      "class_ids": [0, 1, 2, 3],
+      "epochs": 1,
+      "replay_ratio": 0.25,
+      "domain_shift": "brightness",
+      "degradation": true
+    }
+  ]
+}

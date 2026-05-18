@@ -1,0 +1,16 @@
+{
+  "demo_id": "acn-demo-mode",
+  "seed": 20260518,
+  "output_dir": "experiments/acn-demo-mode",
+  "title": "ACN Demo: continual adaptation under domain shift",
+  "steps": [
+    "Dataset preparation",
+    "Baseline training",
+    "Incremental learning",
+    "Branch evolution",
+    "Domain shift",
+    "Rollback recovery",
+    "Human override",
+    "Final report"
+  ]
+}

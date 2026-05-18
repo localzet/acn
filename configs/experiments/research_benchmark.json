@@ -1,0 +1,13 @@
+{
+  "benchmark_id": "acn-research-baseline-comparison",
+  "e2e_config_path": "configs/experiments/acn_e2e_reproducible.json",
+  "output_dir": "experiments/acn-research-baseline-comparison",
+  "seed": 20260518,
+  "repeats": 3,
+  "strategies": [
+    "standard_training",
+    "manual_tuning",
+    "rule_based_acn",
+    "neural_controller_acn"
+  ]
+}

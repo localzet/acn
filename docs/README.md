@@ -16,3 +16,6 @@ Included:
 - Experiment orchestration flow
 - Dashboard frontend integration
 - Architecture audit report
+- End-to-end experiment pipeline
+- Research evaluation utilities
+- Demo mode
