@@ -168,14 +168,21 @@ class Trainer:
         if self._state.epoch % self.config.checkpoint_every_n_epochs != 0:
             return
 
-        path = self._checkpoint_manager.save(
+        artifact = self._checkpoint_manager.save(
             model=self.model,
             optimizer=self.optimizer,
             scheduler=self.scheduler,
             scaler=self._scaler,
             state=self._state,
         )
-        logger.info("checkpoint.saved", extra={"path": str(path), "epoch": self._state.epoch})
+        logger.info(
+            "checkpoint.saved",
+            extra={
+                "uri": artifact.uri,
+                "checksum": artifact.checksum,
+                "epoch": self._state.epoch,
+            },
+        )
 
     def _log_step(self, step: int, total_loss: float, total_examples: int) -> None:
         if self.config.log_every_n_steps <= 0:

@@ -13,7 +13,11 @@ from acn.orchestration.repository import (
     InMemoryExperimentStateRepository,
     SqlAlchemyExperimentStateRepository,
 )
-from acn.orchestration.rollback import RollbackCoordinator
+from acn.orchestration.rollback import (
+    RollbackCoordinator,
+    RollbackRestorationError,
+    RollbackRestorationResult,
+)
 from acn.orchestration.session import StageTrainingRunner, TrainingSession
 from acn.orchestration.stage_transition import StageTransitionManager
 
@@ -27,6 +31,8 @@ __all__ = [
     "ExperimentStatus",
     "InMemoryExperimentStateRepository",
     "RollbackCoordinator",
+    "RollbackRestorationError",
+    "RollbackRestorationResult",
     "SqlAlchemyExperimentStateRepository",
     "StageExecutionRecord",
     "StageExecutionStatus",

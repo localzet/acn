@@ -21,3 +21,4 @@ Included:
 - Demo mode
 - Testing architecture
 - Sync execution model
+- Artifact lifecycle

@@ -61,6 +61,8 @@ class TrainingVersionRepository(Protocol):
 
     def get_commit(self, commit_id: str) -> CommitRecord: ...
 
+    def get_checkpoint(self, checkpoint_id: str) -> StableCheckpointRecord: ...
+
     def list_branch_history(self, branch_name: str) -> tuple[CommitRecord, ...]: ...
 
     def rollback_branch(self, *, branch_name: str, target_commit_id: str) -> BranchRecord: ...
@@ -162,6 +164,9 @@ class SqlAlchemyTrainingVersionRepository:
 
     def get_commit(self, commit_id: str) -> CommitRecord:
         return _commit_record(self._require_commit(commit_id))
+
+    def get_checkpoint(self, checkpoint_id: str) -> StableCheckpointRecord:
+        return _checkpoint_record(self._require_checkpoint(checkpoint_id))
 
     def list_branch_history(self, branch_name: str) -> tuple[CommitRecord, ...]:
         branch = self._require_branch(branch_name)
