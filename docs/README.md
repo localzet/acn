@@ -15,3 +15,4 @@ Included:
 - Video-stream expansion foundation
 - Experiment orchestration flow
 - Dashboard frontend integration
+- Architecture audit report

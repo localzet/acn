@@ -1,10 +1,12 @@
 from fastapi import FastAPI
 
+from acn.config.logging import configure_logging
 from acn.config.settings import Settings, get_settings
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:
     resolved_settings = settings or get_settings()
+    configure_logging(resolved_settings)
     app = FastAPI(
         title="Adaptive Core Network API",
         version="0.1.0",

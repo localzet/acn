@@ -1,13 +1,7 @@
 import logging
 
+from acn.config.logging import configure_logging
 from acn.config.settings import Settings, get_settings
-
-
-def configure_logging(settings: Settings) -> None:
-    logging.basicConfig(
-        level=settings.log_level,
-        format="%(asctime)s %(levelname)s %(name)s %(message)s",
-    )
 
 
 def run(settings: Settings | None = None) -> None:

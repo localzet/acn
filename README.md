@@ -106,6 +106,16 @@ Run the controller simulation:
 make simulate-controller
 ```
 
+The neural adaptive controller adds a PyTorch policy network with offline training,
+decision explainability and fallback to the rule-based controller.
+
+Evaluate and compare controllers:
+
+```bash
+python scripts/controller/evaluate_neural_policy.py
+python scripts/controller/compare_controllers.py
+```
+
 ## Citadel Safety Layer
 
 The Citadel safety layer lives in `packages/acn/src/acn/citadel`.
@@ -134,6 +144,8 @@ It provides:
 
 - reusable `IDataSource` abstractions;
 - image dataset sources with class filtering;
+- future-ready video and camera stream sources;
+- asynchronous frame ingestion with configurable sampling;
 - synthetic domain shift sources;
 - configurable dataset stages;
 - incremental class introduction tracking;
@@ -156,6 +168,10 @@ Typical experiment flow:
 3. Train with the existing trainer using normal `DataLoader` objects.
 4. Evaluate predictions through `ContinualEvaluationPipeline`.
 5. Feed metrics into the adaptive controller and route critical actions through Citadel.
+
+Stream ingestion is intentionally lightweight. `VideoFileSource` and `CameraStreamSource`
+accept an injected frame reader, fill a `TemporalBuffer` asynchronously, and expose a
+snapshot as a regular PyTorch dataset for the existing trainer.
 
 ## Experiment Orchestration
 
