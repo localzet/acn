@@ -22,5 +22,9 @@ class InvalidRollbackTargetError(VersioningError):
     """Raised when rollback target is not reachable from the current branch head."""
 
 
+class BranchHeadConflictError(VersioningError):
+    """Raised when a branch head changed before a guarded update."""
+
+
 class ImmutableCheckpointError(VersioningError):
     """Raised when immutable checkpoint metadata is modified or deleted."""

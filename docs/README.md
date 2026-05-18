@@ -22,3 +22,4 @@ Included:
 - Testing architecture
 - Sync execution model
 - Artifact lifecycle
+- Transaction and integrity model

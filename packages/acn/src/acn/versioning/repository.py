@@ -16,6 +16,7 @@ from acn.versioning.domain import (
 )
 from acn.versioning.exceptions import (
     BranchAlreadyExistsError,
+    BranchHeadConflictError,
     BranchNotFoundError,
     CheckpointNotFoundError,
     CommitNotFoundError,
@@ -65,7 +66,13 @@ class TrainingVersionRepository(Protocol):
 
     def list_branch_history(self, branch_name: str) -> tuple[CommitRecord, ...]: ...
 
-    def rollback_branch(self, *, branch_name: str, target_commit_id: str) -> BranchRecord: ...
+    def rollback_branch(
+        self,
+        *,
+        branch_name: str,
+        target_commit_id: str,
+        expected_head_commit_id: str | None = None,
+    ) -> BranchRecord: ...
 
     def get_commit_graph(self) -> CommitGraph: ...
 
@@ -116,7 +123,6 @@ class SqlAlchemyTrainingVersionRepository:
         try:
             self._session.flush()
         except IntegrityError as exc:
-            self._session.rollback()
             msg = f"Branch already exists: {name}"
             raise BranchAlreadyExistsError(msg) from exc
         return _branch_record(branch)
@@ -133,7 +139,7 @@ class SqlAlchemyTrainingVersionRepository:
         metadata: Metadata | None = None,
         commit_id: str | None = None,
     ) -> CommitRecord:
-        branch = self._require_branch(branch_name)
+        branch = self._require_branch(branch_name, for_update=True)
         self._require_checkpoint(checkpoint_id)
 
         resolved_parent_id = (
@@ -184,9 +190,21 @@ class SqlAlchemyTrainingVersionRepository:
 
         return tuple(history)
 
-    def rollback_branch(self, *, branch_name: str, target_commit_id: str) -> BranchRecord:
-        branch = self._require_branch(branch_name)
+    def rollback_branch(
+        self,
+        *,
+        branch_name: str,
+        target_commit_id: str,
+        expected_head_commit_id: str | None = None,
+    ) -> BranchRecord:
+        branch = self._require_branch(branch_name, for_update=True)
         self._require_commit(target_commit_id)
+        if expected_head_commit_id is not None and branch.head_commit_id != expected_head_commit_id:
+            msg = (
+                f"Branch {branch.name} head changed from expected "
+                f"{expected_head_commit_id} to {branch.head_commit_id}."
+            )
+            raise BranchHeadConflictError(msg)
         if not self._is_reachable_from_head(branch, target_commit_id):
             msg = (
                 f"Commit {target_commit_id} is not reachable from branch "
@@ -219,8 +237,11 @@ class SqlAlchemyTrainingVersionRepository:
         )
         return CommitGraph(nodes=nodes, edges=edges)
 
-    def _require_branch(self, name: str) -> BranchModel:
-        branch = self._session.scalar(select(BranchModel).where(BranchModel.name == name))
+    def _require_branch(self, name: str, *, for_update: bool = False) -> BranchModel:
+        statement = select(BranchModel).where(BranchModel.name == name)
+        if for_update:
+            statement = statement.with_for_update()
+        branch = self._session.scalar(statement)
         if branch is None:
             msg = f"Branch not found: {name}"
             raise BranchNotFoundError(msg)
@@ -257,7 +278,6 @@ class SqlAlchemyTrainingVersionRepository:
         try:
             self._session.flush()
         except IntegrityError as exc:
-            self._session.rollback()
             raise ValueError(message) from exc
 
 

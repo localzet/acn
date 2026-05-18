@@ -1,8 +1,10 @@
 import logging
 from collections.abc import Sequence
+from contextlib import AbstractContextManager, nullcontext
 
 from acn.continual.stage import DatasetStage
 from acn.controller import AdaptiveController, MetricPoint, TrainingContext
+from acn.infrastructure.uow import UnitOfWork
 from acn.orchestration.decision import DecisionExecutionResult, DecisionExecutor
 from acn.orchestration.domain import ExperimentRecord, ExperimentStatus, StageTrainingResult
 from acn.orchestration.repository import ExperimentStateRepository
@@ -24,6 +26,7 @@ class EvolutionPipeline:
         controller: AdaptiveController,
         decision_executor: DecisionExecutor,
         transition_manager: StageTransitionManager,
+        unit_of_work: UnitOfWork | None = None,
     ) -> None:
         self._state_repository = state_repository
         self._version_repository = version_repository
@@ -31,6 +34,7 @@ class EvolutionPipeline:
         self._controller = controller
         self._decision_executor = decision_executor
         self._transition_manager = transition_manager
+        self._unit_of_work = unit_of_work
 
     def run(
         self,
@@ -39,9 +43,14 @@ class EvolutionPipeline:
         stages: Sequence[DatasetStage],
         actor: str = "orchestrator",
     ) -> ExperimentRecord:
-        self._state_repository.update_experiment(experiment.id, status=ExperimentStatus.RUNNING)
+        with self._transaction():
+            self._state_repository.update_experiment(
+                experiment.id,
+                status=ExperimentStatus.RUNNING,
+            )
         current_experiment = self._state_repository.get_experiment(experiment.id)
         metric_history: list[MetricPoint] = []
+        active_execution_id: str | None = None
 
         try:
             for stage in stages:
@@ -49,47 +58,58 @@ class EvolutionPipeline:
                     experiment=current_experiment,
                     stage=stage,
                 )
+                active_execution_id = execution.id
                 result = self._training_session.run_stage(stage)
-                commit = self._commit_stage(
-                    experiment=current_experiment,
-                    stage=stage,
-                    result=result,
-                    actor=actor,
-                )
-                metric_history.extend(result.metrics)
-                self._transition_manager.complete_stage(
-                    execution_id=execution.id,
-                    commit_id=commit.id,
-                    metrics=_latest_metrics(result),
-                )
-                current_experiment = self._state_repository.update_experiment(
-                    experiment.id,
-                    current_stage_id=stage.id,
-                    current_commit_id=commit.id,
-                    best_commit_id=_best_commit_id(current_experiment.best_commit_id, commit),
-                )
-                decision = self._controller.decide(
-                    metrics=metric_history,
-                    context=TrainingContext(
+                with self._transaction():
+                    commit = self._commit_stage(
+                        experiment=current_experiment,
+                        stage=stage,
+                        result=result,
+                        actor=actor,
+                    )
+                    next_metric_history = [*metric_history, *result.metrics]
+                    self._transition_manager.complete_stage(
+                        execution_id=execution.id,
+                        commit_id=commit.id,
+                        metrics=_latest_metrics(result),
+                    )
+                    current_experiment = self._state_repository.update_experiment(
+                        experiment.id,
+                        current_stage_id=stage.id,
+                        current_commit_id=commit.id,
+                        best_commit_id=_best_commit_id(current_experiment.best_commit_id, commit),
+                    )
+                    decision = self._controller.decide(
+                        metrics=next_metric_history,
+                        context=TrainingContext(
+                            branch_name=current_experiment.branch_name,
+                            current_commit_id=current_experiment.current_commit_id,
+                            best_commit_id=current_experiment.best_commit_id,
+                        ),
+                    )
+                    decision_result = self._decision_executor.execute(
+                        decision=decision,
+                        actor=actor,
                         branch_name=current_experiment.branch_name,
                         current_commit_id=current_experiment.current_commit_id,
-                        best_commit_id=current_experiment.best_commit_id,
-                    ),
-                )
-                decision_result = self._decision_executor.execute(
-                    decision=decision,
-                    actor=actor,
-                    branch_name=current_experiment.branch_name,
-                    current_commit_id=current_experiment.current_commit_id,
-                )
+                    )
+                    metric_history = next_metric_history
+                active_execution_id = None
                 self._log_decision(decision_result)
 
-            return self._state_repository.update_experiment(
-                experiment.id,
-                status=ExperimentStatus.COMPLETED,
-            )
+            with self._transaction():
+                return self._state_repository.update_experiment(
+                    experiment.id,
+                    status=ExperimentStatus.COMPLETED,
+                )
         except Exception:
-            self._state_repository.update_experiment(experiment.id, status=ExperimentStatus.FAILED)
+            with self._transaction():
+                if active_execution_id is not None:
+                    self._transition_manager.fail_stage(active_execution_id)
+                self._state_repository.update_experiment(
+                    experiment.id,
+                    status=ExperimentStatus.FAILED,
+                )
             raise
 
     def _commit_stage(
@@ -124,6 +144,11 @@ class EvolutionPipeline:
                 "message": result.message,
             },
         )
+
+    def _transaction(self) -> AbstractContextManager[object]:
+        if self._unit_of_work is None:
+            return nullcontext()
+        return self._unit_of_work.transaction()
 
 
 def _latest_metrics(result: StageTrainingResult) -> Metadata:

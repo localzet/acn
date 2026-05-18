@@ -61,6 +61,7 @@ class RollbackCoordinator:
         return self._version_repository.rollback_branch(
             branch_name=branch_name,
             target_commit_id=target_commit_id,
+            expected_head_commit_id=current_commit_id,
         )
 
     def rollback_and_restore(
@@ -114,6 +115,7 @@ class RollbackCoordinator:
         branch = self._version_repository.rollback_branch(
             branch_name=branch_name,
             target_commit_id=target_commit_id,
+            expected_head_commit_id=current_commit_id,
         )
         return RollbackRestorationResult(
             branch=branch,
