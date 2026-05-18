@@ -155,6 +155,7 @@ export function VisualTrainingDemoView({
                 <KeyValue label="Controller" value={snapshot.controllerState} />
                 <KeyValue label="Branch" value={snapshot.currentBranch} />
                 <KeyValue label="Checkpoint" value={snapshot.activeCheckpointId ?? "-"} />
+                <KeyValue label="MLflow run" value={snapshot.mlflowRunId ?? "offline"} />
                 <KeyValue
                   label="GPU"
                   value={`${snapshot.gpuUsage.device ?? "cpu"} ${
@@ -163,6 +164,22 @@ export function VisualTrainingDemoView({
                       : ""
                   }`}
                 />
+              </div>
+            </Panel>
+
+            <Panel title="Runtime stack">
+              <div className="grid gap-2 text-sm">
+                {Object.entries(snapshot.runtimeStatus).map(([name, status]) => (
+                  <div
+                    key={name}
+                    className="flex items-center justify-between gap-3 rounded-md bg-slate-950 px-3 py-2"
+                  >
+                    <span className="capitalize text-slate-300">{name}</span>
+                    <span className={status.connected ? "text-emerald-300" : "text-amber-300"}>
+                      {status.connected ? "connected" : status.message}
+                    </span>
+                  </div>
+                ))}
               </div>
             </Panel>
 
@@ -186,8 +203,41 @@ export function VisualTrainingDemoView({
                     <p className="mt-1 text-slate-400">
                       epoch {checkpoint.epoch} / acc {Math.round(checkpoint.accuracy * 100)}%
                     </p>
+                    <p className="mt-1 truncate text-xs text-cyan-300">
+                      {checkpoint.artifactUri ?? "artifact pending"}
+                    </p>
+                    <p className="text-xs text-slate-500">
+                      {checkpoint.sizeBytes ? `${checkpoint.sizeBytes} bytes` : "no size"} /{" "}
+                      {checkpoint.storage ?? "memory"}
+                    </p>
                   </div>
                 ))}
+              </div>
+            </Panel>
+
+            <Panel title="Artifact browser">
+              <div className="max-h-64 space-y-2 overflow-auto pr-1">
+                {snapshot.artifacts.map((artifact) => (
+                  <div
+                    key={artifact.commitId}
+                    className="rounded-md border border-slate-800 bg-slate-950 p-3 text-sm"
+                  >
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="font-medium">{artifact.commitId}</span>
+                      <span className="text-cyan-300">{artifact.storage}</span>
+                    </div>
+                    <p className="mt-1 truncate text-xs text-slate-400">{artifact.artifactUri}</p>
+                    <p className="mt-1 text-xs text-slate-500">
+                      MLflow {artifact.mlflowRunId ?? "-"} /{" "}
+                      {artifact.artifactSizeBytes ?? 0} bytes
+                    </p>
+                  </div>
+                ))}
+                {snapshot.artifacts.length === 0 ? (
+                  <p className="text-sm text-slate-500">
+                    Start the demo with Docker stack running to populate MinIO artifacts.
+                  </p>
+                ) : null}
               </div>
             </Panel>
 

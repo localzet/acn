@@ -20,6 +20,10 @@ import torch.nn.functional as functional
 from PIL import Image, ImageDraw
 from torch import Tensor, nn
 
+from acn.artifacts import CheckpointArtifactPayload
+from acn.config.settings import Settings
+from acn.runtime import RuntimeStack, RuntimeStatus
+
 ClassName = Literal["airplane", "ship"]
 DemoStatus = Literal["idle", "running", "paused", "awaiting_approval", "completed", "failed"]
 
@@ -45,6 +49,10 @@ class VisualDemoCheckpoint(TypedDict):
     accuracy: float
     stable: bool
     createdAt: str
+    artifactUri: str | None
+    sizeBytes: int | None
+    mlflowRunId: str | None
+    storage: str | None
 
 
 class VisualDemoEvent(TypedDict):
@@ -86,6 +94,9 @@ class VisualDemoSnapshot(TypedDict):
     predictions: list[VisualDemoPrediction]
     events: list[VisualDemoEvent]
     decisions: list[VisualDemoDecision]
+    runtimeStatus: dict[str, dict[str, str | bool]]
+    mlflowRunId: str | None
+    artifacts: list[dict[str, str | int | float | bool | None]]
 
 
 @dataclass(slots=True)
@@ -98,6 +109,11 @@ class _CheckpointState:
     optimizer_state: dict[str, object]
     stable: bool
     created_at: str
+    artifact_uri: str | None = None
+    checksum: str | None = None
+    size_bytes: int | None = None
+    mlflow_run_id: str | None = None
+    storage: str | None = None
 
 
 @dataclass(slots=True)
@@ -152,6 +168,16 @@ class VisualDemoSession:
         self._model = TinyVisualClassifier().to(self._device)
         self._optimizer = torch.optim.AdamW(self._model.parameters(), lr=2e-3)
         self._validation = _build_dataset(samples=72, seed=seed + 1)
+        self._runtime: RuntimeStack | None = None
+        self._runtime_status: RuntimeStatus | None = None
+        self._mlflow_run_id: str | None = None
+        self._experiment_id = "exp_visual_demo"
+
+    def configure_runtime(self, settings: Settings) -> None:
+        if not settings.runtime_stack_enabled:
+            return
+        self._runtime = RuntimeStack(settings)
+        self._runtime_status = self._runtime.initialize()
 
     def snapshot(self) -> VisualDemoSnapshot:
         with self._lock:
@@ -174,12 +200,19 @@ class VisualDemoSession:
                         "accuracy": checkpoint.accuracy,
                         "stable": checkpoint.stable,
                         "createdAt": checkpoint.created_at,
+                        "artifactUri": checkpoint.artifact_uri,
+                        "sizeBytes": checkpoint.size_bytes,
+                        "mlflowRunId": checkpoint.mlflow_run_id,
+                        "storage": checkpoint.storage,
                     }
                     for checkpoint in self._state.checkpoints
                 ],
                 "predictions": list(self._state.predictions),
                 "events": list(self._state.events[-80:]),
                 "decisions": list(self._state.decisions[-20:]),
+                "runtimeStatus": _runtime_status_dict(self._runtime_status),
+                "mlflowRunId": self._mlflow_run_id,
+                "artifacts": self._runtime.artifact_browser() if self._runtime is not None else [],
             }
 
     def start(self, *, auto_mode: bool = True) -> VisualDemoSnapshot:
@@ -255,6 +288,7 @@ class VisualDemoSession:
         try:
             random.seed(self._seed)
             torch.manual_seed(self._seed)
+            self._start_runtime_run()
             self._event("info", "Visual demo started: airplane vs ship classifier.")
             best_loss = float("inf")
 
@@ -293,6 +327,15 @@ class VisualDemoSession:
                 self._state.stage = "trained-model-ready"
                 self._state.controller_state = "completed"
                 self._event("info", "Training completed. Final model is ready for inference.")
+                if self._runtime is not None:
+                    rollback_events = [
+                        event for event in self._state.events if "Rollback" in event["message"]
+                    ]
+                    self._runtime.log_mlflow_text(
+                        "rollback_events.json",
+                        str(rollback_events),
+                    )
+                    self._runtime.end_mlflow_run()
         except Exception as exc:  # pragma: no cover - surfaced through UI state.
             with self._lock:
                 self._state.status = "failed"
@@ -353,6 +396,7 @@ class VisualDemoSession:
                     "createdAt": _now(),
                 }
             )
+            self._persist_decision(decision_id)
             self._event("warning", "Validation loss degradation detected.")
             if not self._state.auto_mode:
                 self._state.status = "awaiting_approval"
@@ -373,6 +417,7 @@ class VisualDemoSession:
         if not stable:
             return
         best = min(stable, key=lambda checkpoint: checkpoint.validation_loss)
+        previous_checkpoint_id = self._state.active_checkpoint_id
         self._model.load_state_dict(best.model_state)
         self._optimizer.load_state_dict(best.optimizer_state)
         self._state.active_checkpoint_id = best.id
@@ -382,6 +427,16 @@ class VisualDemoSession:
         self._state.controller_state = "checkpoint_restored"
         self._event("warning", "Rollback initiated.")
         self._event("info", f"Checkpoint restored: {best.id}.")
+        if self._runtime is not None:
+            self._runtime.persist_rollback(
+                experiment_id=self._experiment_id,
+                from_commit_id=previous_checkpoint_id,
+                to_commit_id=best.id,
+                artifact_uri=best.artifact_uri,
+                reason="Validation degradation rollback",
+                mlflow_run_id=self._mlflow_run_id,
+            )
+            self._runtime.log_mlflow_text("rollback.txt", f"Restored checkpoint {best.id}")
 
     def _record_metric(
         self,
@@ -403,6 +458,11 @@ class VisualDemoSession:
                     "stage": self._state.stage,
                 }
             )
+        if self._runtime is not None:
+            self._runtime.log_mlflow_metric("train_loss", train_loss, step=epoch)
+            self._runtime.log_mlflow_metric("validation_loss", validation_loss, step=epoch)
+            self._runtime.log_mlflow_metric("accuracy", accuracy, step=epoch)
+            self._runtime.log_mlflow_metric("learning_rate", learning_rate, step=epoch)
 
     def _save_checkpoint(
         self,
@@ -423,10 +483,45 @@ class VisualDemoSession:
             stable=stable,
             created_at=_now(),
         )
+        payload: CheckpointArtifactPayload = {
+            "epoch": epoch,
+            "global_step": epoch * 1000 + int(time.time()) % 1000,
+            "best_validation_loss": validation_loss if stable else None,
+            "model_state": copy.deepcopy(self._model.state_dict()),
+            "optimizer_state": copy.deepcopy(self._optimizer.state_dict()),
+            "scheduler_state": None,
+            "scaler_state": None,
+        }
+        if self._runtime is not None:
+            artifact = self._runtime.save_checkpoint(
+                name=f"visual-demo/{checkpoint_id}.pt",
+                payload=payload,
+            )
+            if artifact is not None:
+                checkpoint.artifact_uri = artifact.uri
+                checkpoint.checksum = artifact.checksum
+                checkpoint.size_bytes = artifact.size_bytes
+                checkpoint.mlflow_run_id = self._mlflow_run_id
+                checkpoint.storage = "minio"
+                commit = self._runtime.persist_checkpoint_commit(
+                    experiment_id=self._experiment_id,
+                    checkpoint_id=f"{checkpoint_id}_{int(time.time() * 1000)}",
+                    artifact=artifact,
+                    metrics={
+                        "epoch": epoch,
+                        "validation_loss": validation_loss,
+                        "accuracy": accuracy,
+                        "stable": stable,
+                        "stage": self._state.stage,
+                    },
+                    mlflow_run_id=self._mlflow_run_id,
+                )
+                if commit is not None:
+                    checkpoint.id = commit.id
         with self._lock:
             self._state.checkpoints.append(checkpoint)
-            self._state.active_checkpoint_id = checkpoint_id
-            self._event("info", f"Checkpoint committed: {checkpoint_id}.")
+            self._state.active_checkpoint_id = checkpoint.id
+            self._event("info", f"Checkpoint committed: {checkpoint.id}.")
 
     @torch.inference_mode()
     def _refresh_predictions(self) -> None:
@@ -480,6 +575,7 @@ class VisualDemoSession:
         self._approve_event.clear()
         self._model = TinyVisualClassifier().to(self._device)
         self._optimizer = torch.optim.AdamW(self._model.parameters(), lr=2e-3)
+        self._mlflow_run_id = None
 
     def _event(self, level: str, message: str) -> None:
         self._state.events.append(
@@ -489,6 +585,38 @@ class VisualDemoSession:
                 "message": message,
                 "createdAt": _now(),
             }
+        )
+
+    def _start_runtime_run(self) -> None:
+        if self._runtime is None:
+            self._event("warning", "Runtime stack is offline; using in-memory demo mode.")
+            return
+        self._mlflow_run_id = self._runtime.start_mlflow_run(
+            run_name=f"visual-demo-{int(time.time())}",
+            params={
+                "dataset": "generated-airplane-vs-ship",
+                "model": "TinyVisualClassifier",
+                "controller_mode": "auto" if self._state.auto_mode else "manual",
+            },
+        )
+        self._runtime.ensure_visual_experiment(
+            experiment_id=self._experiment_id,
+            run_id=self._mlflow_run_id,
+        )
+        self._event("info", "Runtime stack connected: PostgreSQL, MLflow and MinIO are active.")
+
+    def _persist_decision(self, decision_id: str) -> None:
+        if self._runtime is None:
+            return
+        self._runtime.persist_decision(
+            experiment_id=self._experiment_id,
+            decision_id=decision_id,
+            action="rollback",
+            status="executed" if self._state.auto_mode else "pending",
+            reason="Validation loss degradation detected after LR spike.",
+            commit_id=self._state.active_checkpoint_id,
+            mlflow_run_id=self._mlflow_run_id,
+            metadata={"controller_state": self._state.controller_state},
         )
 
 
@@ -557,6 +685,34 @@ def _gpu_usage(device: torch.device) -> dict[str, str | float | None]:
         "device": torch.cuda.get_device_name(device),
         "memoryAllocatedMb": round(torch.cuda.memory_allocated(device) / 1024 / 1024, 2),
         "memoryReservedMb": round(torch.cuda.memory_reserved(device) / 1024 / 1024, 2),
+    }
+
+
+def _runtime_status_dict(status: RuntimeStatus | None) -> dict[str, dict[str, str | bool]]:
+    if status is None:
+        return {
+            "postgres": {"connected": False, "message": "not configured"},
+            "mlflow": {"connected": False, "message": "not configured"},
+            "minio": {"connected": False, "message": "not configured"},
+            "artifactStorage": {"connected": False, "message": "not configured"},
+        }
+    return {
+        "postgres": {
+            "connected": status.postgres.connected,
+            "message": status.postgres.message,
+        },
+        "mlflow": {
+            "connected": status.mlflow.connected,
+            "message": status.mlflow.message,
+        },
+        "minio": {
+            "connected": status.minio.connected,
+            "message": status.minio.message,
+        },
+        "artifactStorage": {
+            "connected": status.artifact_storage.connected,
+            "message": status.artifact_storage.message,
+        },
     }
 
 

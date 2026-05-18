@@ -44,6 +44,24 @@ Use `AUTO` for fully automatic rollback. Toggle to `MANUAL` to pause before crit
 approve or reject the controller action. After training, upload an image in the final inference
 panel to run prediction against the current model checkpoint.
 
+For a full infrastructure-backed demo, use Docker Compose:
+
+```bash
+cp .env.example .env
+make compose-up
+```
+
+Then open:
+
+- Dashboard: <http://localhost:5173>
+- MLflow: <http://localhost:5000>
+- MinIO: <http://localhost:9001>
+- Runtime health: <http://localhost:8000/api/v1/runtime/health>
+
+With `ACN_RUNTIME_STACK_ENABLED=true`, the live demo persists commits, checkpoints, decisions and
+rollback events to PostgreSQL, stores checkpoint artifacts in MinIO and logs metrics/artifacts to
+MLflow. See `docs/27_runtime_stack.md`.
+
 ## Requirements
 
 - Python 3.12

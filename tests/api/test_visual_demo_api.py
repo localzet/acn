@@ -26,6 +26,9 @@ def test_visual_demo_state_contract() -> None:
         "predictions",
         "events",
         "decisions",
+        "runtimeStatus",
+        "mlflowRunId",
+        "artifacts",
     }
     assert payload["currentBranch"] == "main"
     assert isinstance(payload["metrics"], list)

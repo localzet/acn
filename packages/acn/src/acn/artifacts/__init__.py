@@ -7,6 +7,7 @@ from acn.artifacts.domain import (
     UnsupportedArtifactURIError,
 )
 from acn.artifacts.local import LocalArtifactStore
+from acn.artifacts.minio import MinIOArtifactStore
 from acn.artifacts.models import CheckpointArtifactPayload
 from acn.artifacts.storage import ArtifactStore
 
@@ -19,5 +20,6 @@ __all__ = [
     "ArtifactStore",
     "CheckpointArtifactPayload",
     "LocalArtifactStore",
+    "MinIOArtifactStore",
     "UnsupportedArtifactURIError",
 ]

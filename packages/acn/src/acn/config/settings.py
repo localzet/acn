@@ -33,14 +33,17 @@ class Settings(BaseSettings):
 
     mlflow_tracking_uri: str = "http://localhost:5000"
     mlflow_artifact_root: str = "s3://mlflow/"
+    mlflow_experiment_name: str = "ACN Visual Adaptive Demo"
 
     minio_endpoint: str = "http://localhost:9000"
     minio_access_key: str = Field(default="minioadmin", repr=False)
     minio_secret_key: str = Field(default="minioadmin", repr=False)
     minio_bucket: str = "mlflow"
+    minio_artifact_bucket: str = "acn-artifacts"
     minio_region: str = "us-east-1"
 
     dashboard_telemetry_path: Path | None = None
+    runtime_stack_enabled: bool = False
 
     @property
     def database_url(self) -> str:

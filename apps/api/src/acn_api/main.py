@@ -3,7 +3,9 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from acn.config.logging import configure_logging
 from acn.config.settings import Settings, get_settings
+from acn.experiments.visual_demo import visual_demo_session
 from acn_api.dashboard import router as dashboard_router
+from acn_api.runtime import router as runtime_router
 from acn_api.visual_demo import router as visual_demo_router
 
 
@@ -17,6 +19,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         redoc_url="/redoc",
     )
     app.state.settings = resolved_settings
+    visual_demo_session.configure_runtime(resolved_settings)
     app.add_middleware(
         CORSMiddleware,
         allow_origin_regex=resolved_settings.cors_allow_origin_regex,
@@ -25,6 +28,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         allow_headers=["*"],
     )
     app.include_router(dashboard_router)
+    app.include_router(runtime_router)
     app.include_router(visual_demo_router)
 
     @app.get("/health", tags=["system"])

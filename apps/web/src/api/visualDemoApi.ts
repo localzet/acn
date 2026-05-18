@@ -18,6 +18,14 @@ export const emptyVisualDemoSnapshot: VisualDemoSnapshot = {
   predictions: [],
   events: [],
   decisions: [],
+  runtimeStatus: {
+    postgres: { connected: false, message: "not loaded" },
+    mlflow: { connected: false, message: "not loaded" },
+    minio: { connected: false, message: "not loaded" },
+    artifactStorage: { connected: false, message: "not loaded" },
+  },
+  mlflowRunId: null,
+  artifacts: [],
 };
 
 export async function fetchVisualDemoState(): Promise<VisualDemoSnapshot> {

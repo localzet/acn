@@ -23,6 +23,10 @@ export type VisualDemoCheckpoint = {
   accuracy: number;
   stable: boolean;
   createdAt: string;
+  artifactUri: string | null;
+  sizeBytes: number | null;
+  mlflowRunId: string | null;
+  storage: string | null;
 };
 
 export type VisualDemoPrediction = {
@@ -68,10 +72,24 @@ export type VisualDemoSnapshot = {
   predictions: VisualDemoPrediction[];
   events: VisualDemoEvent[];
   decisions: VisualDemoDecision[];
+  runtimeStatus: Record<string, { connected: boolean; message: string }>;
+  mlflowRunId: string | null;
+  artifacts: VisualDemoArtifact[];
 };
 
 export type VisualDemoInference = {
   predictedClass: string;
   confidence: number;
   modelCheckpoint: string;
+};
+
+export type VisualDemoArtifact = {
+  commitId: string;
+  checkpointId: string;
+  artifactUri: string;
+  artifactSizeBytes: number | null;
+  storage: string;
+  mlflowRunId: string | null;
+  validationLoss: number | null;
+  accuracy: number | null;
 };

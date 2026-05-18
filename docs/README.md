@@ -27,3 +27,4 @@ Included:
 - System maturity matrix
 - Development rules
 - Visual demo architecture
+- Runtime stack
