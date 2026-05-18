@@ -24,3 +24,5 @@ Included:
 - Artifact lifecycle
 - Transaction and integrity model
 - Real adaptive vertical slice
+- System maturity matrix
+- Development rules

@@ -31,7 +31,7 @@ ACN имеет правильные доменные границы:
 apps/
   api/src/acn_api/
     main.py              FastAPI app factory, health, router mounting
-    dashboard.py         dashboard REST/SSE/WS contract stub
+    dashboard.py         dashboard REST/SSE/WS snapshot endpoint backed by optional telemetry file
   worker/src/acn_worker/
     main.py              worker startup logging only
   web/src/
@@ -49,9 +49,7 @@ packages/acn/src/acn/
   orchestration/         experiment manager, pipeline, decision executor, rollback coordinator
   experiments/           synthetic E2E and research benchmark utilities
   config/                settings and logging
-  domain/                empty namespace
-  infrastructure/        empty namespace
-  services/              empty namespace
+  infrastructure/        UnitOfWork transaction adapters
 
 infra/
   db/alembic/versions/   migrations for versioning, citadel audit, experiment state

@@ -298,7 +298,7 @@ def run_real_vertical_slice(
                 target_commit_id=str(decision.parameters["target_commit_id"]),
                 model=model,
                 optimizer=optimizer,
-                map_location=device,
+                map_location=str(device),
             )
             restored = True
             rollbacks.append(

@@ -8,7 +8,9 @@ __pycache__/
 .mypy_cache/
 .ruff_cache/
 .coverage
+.coverage.*
 htmlcov/
+reports/
 
 .venv/
 venv/
@@ -17,11 +19,21 @@ node_modules/
 dist/
 coverage/
 *.tsbuildinfo
+apps/web/.vite/
 data/
 
 checkpoints/*
 !checkpoints/.gitkeep
 experiments/*
 !experiments/.gitkeep
+artifacts/
+mlruns/
+*.pt
+*.pth
+*.ckpt
+*.onnx
+*.sqlite
+*.sqlite3
+*.db
 
 .DS_Store

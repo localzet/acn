@@ -1,3 +1,10 @@
+"""Experimental neural adaptive controller.
+
+The rule-based controller remains the stable local decision path. This module is
+kept explicit as experimental until ACN has a real offline policy dataset,
+calibrated confidence thresholds and production evaluation criteria.
+"""
+
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from pathlib import Path

@@ -1,3 +1,9 @@
+"""Synthetic E2E experiment utility.
+
+This module is deterministic research/demo support, not the production training
+path. Real checkpoint restoration is exercised by `acn.experiments.real_vertical`.
+"""
+
 import json
 import random
 from collections.abc import Mapping, Sequence, Sized

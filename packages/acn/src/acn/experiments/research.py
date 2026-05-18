@@ -1,3 +1,9 @@
+"""Experimental synthetic research benchmark utilities.
+
+The generated comparisons are deterministic local simulations for workflow
+validation. They must not be presented as empirical ML benchmark results.
+"""
+
 import csv
 import json
 import math

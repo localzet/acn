@@ -262,7 +262,7 @@ Boundary assessment:
 - `acn.orchestration` depends on multiple domains and acts as a coordinator. This is correct for a modular monolith.
 - `acn.citadel` depends on controller action types and versioning repository contracts. This coupling is acceptable because Citadel validates action safety against version history.
 - `apps/web` depends only on HTTP/event contracts, not backend packages. This is correct.
-- Empty namespaces `acn.domain`, `acn.infrastructure`, and `acn.services` currently have no ownership and are architectural placeholders.
+- Empty namespaces `acn.domain` and `acn.services` were removed. `acn.infrastructure` is retained for concrete UnitOfWork transaction adapters.
 
 ## 2. System Architecture
 
@@ -1292,9 +1292,9 @@ Gaps:
 ### TODOs and Temporary Hints
 
 No explicit `TODO`/`FIXME` markers were found in source, but these are effectively temporary:
-- `acn.domain`, `acn.infrastructure`, `acn.services` are empty.
 - `apps/worker/src/acn_worker/main.py` is a startup stub.
-- `apps/api/src/acn_api/dashboard.py` is a contract stub.
+- `acn.infrastructure` must stay limited to concrete adapters; do not use it as a dumping ground.
+- `apps/api/src/acn_api/dashboard.py` is file-snapshot backed and not yet repository-backed.
 - `acn.experiments.e2e` and `acn.experiments.research` are deterministic simulations.
 - Demo mode is static presentation data.
 
@@ -1408,5 +1408,5 @@ flowchart LR
 6. Add real PostgreSQL integration tests for migrations and repository behavior.
 7. Add a real Fashion-MNIST E2E smoke experiment separate from synthetic CI.
 8. Keep neural controller experimental until it has a reproducible offline policy dataset.
-9. Remove or document empty namespaces before they become dumping grounds.
+9. Keep `acn.infrastructure` limited to concrete adapters and avoid new placeholder namespaces.
 10. Generate frontend types from OpenAPI or share a schema contract to prevent drift.

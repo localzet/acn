@@ -1,9 +1,5 @@
 from dataclasses import dataclass
-
-import torch
-from torch import nn
-from torch.optim import Optimizer
-from torch.optim.lr_scheduler import LRScheduler
+from typing import Any, Protocol
 
 from acn.artifacts import ArtifactStore
 from acn.citadel import CitadelActionRequest, CitadelSafetyLayer
@@ -15,6 +11,10 @@ from acn.versioning.repository import TrainingVersionRepository
 
 class RollbackRestorationError(RuntimeError):
     """Raised when rollback restoration cannot be started safely."""
+
+
+class StateLoadable(Protocol):
+    def load_state_dict(self, state_dict: dict[str, Any]) -> object: ...
 
 
 @dataclass(frozen=True, slots=True)
@@ -71,12 +71,12 @@ class RollbackCoordinator:
         branch_name: str,
         current_commit_id: str | None,
         target_commit_id: str,
-        model: nn.Module,
-        optimizer: Optimizer | None = None,
-        scheduler: LRScheduler | None = None,
-        scaler: torch.GradScaler | None = None,
+        model: StateLoadable,
+        optimizer: StateLoadable | None = None,
+        scheduler: StateLoadable | None = None,
+        scaler: StateLoadable | None = None,
         artifact_store: ArtifactStore | None = None,
-        map_location: str | torch.device = "cpu",
+        map_location: str = "cpu",
     ) -> RollbackRestorationResult:
         result = self._citadel.validate_action(
             CitadelActionRequest(

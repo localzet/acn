@@ -1,3 +1,8 @@
+"""Generate deterministic demo playback assets.
+
+Demo mode is a presentation workflow, not a production telemetry source.
+"""
+
 import json
 from argparse import ArgumentParser, Namespace
 from pathlib import Path

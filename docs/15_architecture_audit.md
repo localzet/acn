@@ -109,10 +109,10 @@ Detected import cycles: none.
 
 ## Technical Debt
 
-- `acn.domain`, `acn.infrastructure` and `acn.services` are currently empty namespace placeholders.
-  Keep them only if near-term modules will use them; otherwise remove later in a cleanup-only pass.
-- Backend dashboard endpoints documented in `docs/14_dashboard_frontend.md` are not implemented
-  in FastAPI yet, so the frontend currently depends on future API integration.
+- `acn.domain` and `acn.services` were removed because they had no concrete ownership.
+  `acn.infrastructure` is retained only for concrete UnitOfWork transaction adapters.
+- Backend dashboard endpoints now expose the frontend snapshot/SSE/WebSocket contract and can read
+  real vertical-slice telemetry from a configured snapshot file.
 - Repository methods are synchronous. This is fine for the worker-first architecture, but future
   concurrent API use should avoid blocking event loops.
 - Docker healthcheck for MinIO should be verified in a real Docker runtime because this audit
@@ -126,7 +126,7 @@ Detected import cycles: none.
 2. Add a CI job that runs Python checks, frontend typecheck/build and `docker compose config`.
 3. Keep orchestration as the only module that coordinates trainer, controller, Citadel and
    versioning.
-4. Avoid introducing new top-level packages until `acn.domain`, `acn.infrastructure` or
-   `acn.services` have concrete ownership.
+4. Avoid introducing new top-level packages unless they have concrete ownership, tests and real
+   callers.
 5. Add integration tests around repository-backed orchestration once the API/worker lifecycle is
    wired to PostgreSQL.
