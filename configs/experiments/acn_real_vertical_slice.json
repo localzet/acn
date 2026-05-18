@@ -1,0 +1,15 @@
+{
+  "experiment_id": "acn-real-fashion-mnist-rollback",
+  "seed": 20260518,
+  "output_dir": "experiments/acn-real-fashion-mnist-rollback",
+  "data_dir": "data",
+  "max_train_samples": 512,
+  "max_validation_samples": 256,
+  "batch_size": 64,
+  "baseline_epochs": 1,
+  "degraded_epochs": 1,
+  "recovery_epochs": 1,
+  "learning_rate": 0.001,
+  "spike_learning_rate": 0.75,
+  "device": null
+}

@@ -4,6 +4,13 @@ from acn.experiments.e2e import (
     ExperimentArtifactPaths,
     run_e2e_experiment,
 )
+from acn.experiments.real_vertical import (
+    RealVerticalSliceArtifacts,
+    RealVerticalSliceConfig,
+    RealVerticalSliceResult,
+    load_real_vertical_slice_config,
+    run_real_vertical_slice,
+)
 from acn.experiments.research import (
     ResearchBenchmarkArtifacts,
     ResearchBenchmarkConfig,
@@ -21,6 +28,9 @@ __all__ = [
     "E2EExperimentConfig",
     "E2EExperimentResult",
     "ExperimentArtifactPaths",
+    "RealVerticalSliceArtifacts",
+    "RealVerticalSliceConfig",
+    "RealVerticalSliceResult",
     "ResearchBenchmarkArtifacts",
     "ResearchBenchmarkConfig",
     "ResearchBenchmarkResult",
@@ -29,7 +39,9 @@ __all__ = [
     "StrategyRunMetrics",
     "aggregate_strategy_runs",
     "compare_strategy_statistics",
+    "load_real_vertical_slice_config",
     "load_research_benchmark_config",
     "run_e2e_experiment",
+    "run_real_vertical_slice",
     "run_research_benchmark",
 ]

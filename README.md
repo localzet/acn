@@ -12,40 +12,6 @@ The initial scaffold provides the runtime boundaries only:
 
 Business logic is intentionally not implemented yet.
 
-## Repository Layout
-
-```text
-.
-├── apps/
-│   ├── api/
-│   ├── web/
-│   └── worker/
-├── packages/
-│   └── acn/
-├── infra/
-│   └── docker/
-├── docs/
-├── experiments/
-├── checkpoints/
-├── tests/
-├── .env.example
-├── docker-compose.yml
-├── Makefile
-└── pyproject.toml
-```
-
-## Architecture
-
-ACN starts as a modular monolith with explicit application boundaries:
-
-- `apps/api` owns HTTP concerns and depends on shared application services through `packages/acn`.
-- `apps/worker` owns long-running execution concerns and consumes the same shared package.
-- `packages/acn` is the internal Python package for configuration, domain contracts, services and infrastructure adapters.
-- `apps/web` is isolated as a TypeScript frontend and talks to the API over HTTP.
-- `infra/docker` contains runtime images while `docker-compose.yml` wires local infrastructure.
-
-This keeps the system deployable as a small local stack while preserving clean seams for trainer, version store, controller and experiment tracking modules.
-
 ## Trainer Core
 
 The trainer core lives in `packages/acn/src/acn/training` and is independent from API, worker and UI runtimes.

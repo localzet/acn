@@ -3,7 +3,7 @@ from collections.abc import AsyncIterator
 from datetime import UTC, datetime
 from typing import Any
 
-from fastapi import APIRouter, WebSocket
+from fastapi import APIRouter, Request, WebSocket
 from pydantic import AliasChoices, BaseModel, ConfigDict, Field
 from starlette.responses import StreamingResponse
 
@@ -23,14 +23,14 @@ class OverrideRequest(BaseModel):
 
 
 @router.get("/dashboard/snapshot")
-async def dashboard_snapshot() -> dict[str, Any]:
-    return _empty_snapshot()
+async def dashboard_snapshot(request: Request) -> dict[str, Any]:
+    return _load_snapshot(request)
 
 
 @router.get("/dashboard/events")
-async def dashboard_events() -> StreamingResponse:
+async def dashboard_events(request: Request) -> StreamingResponse:
     async def events() -> AsyncIterator[str]:
-        yield f"data: {json.dumps({'type': 'snapshot', 'payload': _empty_snapshot()})}\n\n"
+        yield f"data: {json.dumps({'type': 'snapshot', 'payload': _load_snapshot(request)})}\n\n"
 
     return StreamingResponse(events(), media_type="text/event-stream")
 
@@ -38,7 +38,7 @@ async def dashboard_events() -> StreamingResponse:
 @router.websocket("/dashboard/ws")
 async def dashboard_websocket(websocket: WebSocket) -> None:
     await websocket.accept()
-    await websocket.send_json({"type": "snapshot", "payload": _empty_snapshot()})
+    await websocket.send_json({"type": "snapshot", "payload": _load_snapshot(websocket)})
     await websocket.close()
 
 
@@ -71,3 +71,16 @@ def _empty_snapshot() -> dict[str, Any]:
             }
         ],
     }
+
+
+def _load_snapshot(request: Request | WebSocket) -> dict[str, Any]:
+    settings = getattr(request.app.state, "settings", None)
+    telemetry_path = getattr(settings, "dashboard_telemetry_path", None)
+    if telemetry_path is None or not telemetry_path.exists():
+        return _empty_snapshot()
+
+    with telemetry_path.open(encoding="utf-8") as stream:
+        payload = json.load(stream)
+    if not isinstance(payload, dict):
+        return _empty_snapshot()
+    return payload

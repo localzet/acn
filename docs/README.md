@@ -23,3 +23,4 @@ Included:
 - Sync execution model
 - Artifact lifecycle
 - Transaction and integrity model
+- Real adaptive vertical slice

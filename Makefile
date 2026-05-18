@@ -1,4 +1,4 @@
-.PHONY: install lint format type-check test coverage check migrate compose-up compose-down api worker web train-fashion-mnist simulate-controller simulate-citadel demo-continual-fashion demo-orchestration e2e-experiment research-benchmark demo-assets demo-mode
+.PHONY: install lint format type-check test coverage check migrate compose-up compose-down api worker web train-fashion-mnist simulate-controller simulate-citadel demo-continual-fashion demo-orchestration e2e-experiment real-vertical-slice research-benchmark demo-assets demo-mode
 
 PYTHON ?= python3.12
 PIP ?= $(PYTHON) -m pip
@@ -61,6 +61,9 @@ demo-orchestration:
 
 e2e-experiment:
 	$(PYTHON) scripts/experiments/run_e2e_experiment.py
+
+real-vertical-slice:
+	$(PYTHON) scripts/experiments/run_real_vertical_slice.py
 
 research-benchmark:
 	$(PYTHON) scripts/experiments/run_research_benchmark.py

@@ -1,4 +1,5 @@
 from functools import lru_cache
+from pathlib import Path
 from typing import Literal
 
 from pydantic import Field, RedisDsn
@@ -37,6 +38,8 @@ class Settings(BaseSettings):
     minio_secret_key: str = Field(default="minioadmin", repr=False)
     minio_bucket: str = "mlflow"
     minio_region: str = "us-east-1"
+
+    dashboard_telemetry_path: Path | None = None
 
     @property
     def database_url(self) -> str:
