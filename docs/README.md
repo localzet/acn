@@ -26,3 +26,4 @@ Included:
 - Real adaptive vertical slice
 - System maturity matrix
 - Development rules
+- Visual demo architecture

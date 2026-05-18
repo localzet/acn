@@ -24,6 +24,18 @@ def test_dashboard_snapshot_contract_returns_frontend_shape() -> None:
     assert payload["branchGraph"] == {"nodes": [], "edges": []}
 
 
+def test_dashboard_snapshot_allows_local_vite_origins() -> None:
+    client = TestClient(create_app(Settings(env="test")))
+
+    response = client.get(
+        "/api/v1/dashboard/snapshot",
+        headers={"Origin": "http://localhost:5176"},
+    )
+
+    assert response.status_code == 200
+    assert response.headers["access-control-allow-origin"] == "http://localhost:5176"
+
+
 def test_override_submission_returns_accepted_response() -> None:
     client = TestClient(create_app(Settings(env="test")))
 

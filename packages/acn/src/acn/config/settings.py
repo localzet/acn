@@ -19,6 +19,7 @@ class Settings(BaseSettings):
 
     api_host: str = "127.0.0.1"
     api_port: int = 8000
+    cors_allow_origin_regex: str | None = r"https?://(localhost|127\.0\.0\.1):\d+"
 
     postgres_host: str = "localhost"
     postgres_port: int = 5432

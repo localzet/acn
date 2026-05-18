@@ -16,7 +16,33 @@ ACN currently supports:
 - continual-learning abstractions, replay buffer and forgetting/retention metrics;
 - synchronous orchestration for Stage 1 local execution;
 - real Fashion-MNIST vertical slice with checkpoint restoration and dashboard telemetry;
-- React dashboard with REST snapshot plus SSE/WebSocket update contracts.
+- React dashboard with REST snapshot plus SSE/WebSocket update contracts;
+- presentation-first live visual demo for airplane-vs-ship adaptive training.
+
+## Visual Leadership Demo
+
+Run the API and frontend:
+
+```bash
+make api
+make web
+```
+
+Open the frontend and choose `Live Demo`:
+
+```text
+http://localhost:5173
+```
+
+Press `Start`.
+
+The demo shows a small CNN learning a visually understandable airplane-vs-ship task. During the
+run it displays live loss/accuracy/LR charts, validation image predictions, checkpoint timeline,
+adaptive event feed, rollback count, current branch/checkpoint and GPU memory if CUDA is available.
+
+Use `AUTO` for fully automatic rollback. Toggle to `MANUAL` to pause before critical rollback and
+approve or reject the controller action. After training, upload an image in the final inference
+panel to run prediction against the current model checkpoint.
 
 ## Requirements
 
@@ -113,6 +139,8 @@ export VITE_API_BASE_URL=http://localhost:8000
 ```
 
 from inside `apps/web` before running `npm run dev`, or keep the default local setup.
+The API allows local Vite origins such as `http://localhost:5173` and `http://localhost:5176`
+through `ACN_CORS_ALLOW_ORIGIN_REGEX`.
 
 ## Docker Compose Stack
 

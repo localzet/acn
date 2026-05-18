@@ -12,12 +12,14 @@ import {
   RotateCcw,
   ShieldCheck,
   Sun,
+  Tv,
 } from "lucide-react";
 import { useMemo, useState } from "react";
 
 import { appConfig } from "./config";
 import { useDemoPlayback } from "./hooks/useDemoPlayback";
 import { useDashboardData } from "./hooks/useDashboardData";
+import { useVisualDemo } from "./hooks/useVisualDemo";
 import { OverrideConsole } from "./views/OverrideConsole";
 import { BranchGraphView } from "./views/BranchGraphView";
 import { CommitGraphView } from "./views/CommitGraphView";
@@ -27,8 +29,10 @@ import { ExperimentInspectorView } from "./views/ExperimentInspectorView";
 import { LiveLogsView } from "./views/LiveLogsView";
 import { MetricsTimelineView } from "./views/MetricsTimelineView";
 import { RollbackHistoryView } from "./views/RollbackHistoryView";
+import { VisualTrainingDemoView } from "./views/VisualTrainingDemoView";
 
 const navItems = [
+  { id: "live-demo", label: "Live Demo", icon: Tv },
   { id: "commits", label: "Commits", icon: GitCommit },
   { id: "branches", label: "Branches", icon: GitBranch },
   { id: "metrics", label: "Metrics", icon: LineChart },
@@ -46,9 +50,28 @@ export function App() {
   const [activeView, setActiveView] = useState<ViewId>("commits");
   const [darkMode, setDarkMode] = useState(true);
   const { snapshot, connection, error, refresh, submitOverride } = useDashboardData();
+  const visualDemo = useVisualDemo();
 
   if (appConfig.demoMode) {
     return <DemoPresentationView playback={demoPlayback} />;
+  }
+
+  if (activeView === "live-demo") {
+    return (
+      <VisualTrainingDemoView
+        snapshot={visualDemo.snapshot}
+        error={visualDemo.error}
+        inference={visualDemo.inference}
+        onStart={visualDemo.start}
+        onPause={visualDemo.pause}
+        onResume={visualDemo.resume}
+        onRollback={visualDemo.rollback}
+        onSetAutoMode={visualDemo.setAutoMode}
+        onApprove={visualDemo.approve}
+        onReject={visualDemo.reject}
+        onPredict={visualDemo.predict}
+      />
+    );
   }
 
   const activeExperiment = snapshot.experiments[0];
