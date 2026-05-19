@@ -9,6 +9,7 @@ import {
   Upload,
   XCircle,
 } from "lucide-react";
+import { useState } from "react";
 import type { ChangeEvent } from "react";
 import type { ReactNode } from "react";
 import {
@@ -21,12 +22,18 @@ import {
   YAxis,
 } from "recharts";
 
-import type { VisualDemoInference, VisualDemoSnapshot } from "../types/visualDemo";
+import type {
+  VisualDemoComparison,
+  VisualDemoInference,
+  VisualDemoSnapshot,
+} from "../types/visualDemo";
 
 type VisualTrainingDemoProps = {
   snapshot: VisualDemoSnapshot;
   error: string | null;
   inference: VisualDemoInference | null;
+  comparison: VisualDemoComparison | null;
+  exportPaths: Record<string, string> | null;
   onStart: (autoMode: boolean) => void;
   onPause: () => void;
   onResume: () => void;
@@ -34,13 +41,21 @@ type VisualTrainingDemoProps = {
   onSetAutoMode: (enabled: boolean) => void;
   onApprove: (decisionId: string) => void;
   onReject: (decisionId: string) => void;
-  onPredict: (imageDataUrl: string) => void;
+  onPredict: (imageDataUrl: string, checkpointId?: string) => void;
+  onCompare: (
+    imageDataUrl: string,
+    baselineCheckpointId?: string,
+    candidateCheckpointId?: string,
+  ) => void;
+  onExportReport: () => void;
 };
 
 export function VisualTrainingDemoView({
   snapshot,
   error,
   inference,
+  comparison,
+  exportPaths,
   onStart,
   onPause,
   onResume,
@@ -49,9 +64,14 @@ export function VisualTrainingDemoView({
   onApprove,
   onReject,
   onPredict,
+  onCompare,
+  onExportReport,
 }: VisualTrainingDemoProps) {
   const latest = snapshot.metrics.at(-1);
   const pendingDecision = snapshot.decisions.find((decision) => decision.status === "pending");
+  const [guideIndex, setGuideIndex] = useState(0);
+  const [selectedCheckpointId, setSelectedCheckpointId] = useState<string>("latest");
+  const guide = guidedSteps[guideIndex];
 
   return (
     <main className="min-h-screen bg-slate-950 text-slate-100">
@@ -85,6 +105,40 @@ export function VisualTrainingDemoView({
             {error}
           </div>
         ) : null}
+
+        <Panel title="5-minute presenter guide">
+          <div className="grid gap-4 lg:grid-cols-[1fr_auto] lg:items-center">
+            <div>
+              <p className="text-sm font-semibold uppercase text-cyan-300">
+                Step {guideIndex + 1}/{guidedSteps.length}: {guide.title}
+              </p>
+              <p className="mt-2 text-lg text-slate-100">{guide.viewer}</p>
+              <p className="mt-1 text-sm text-slate-400">{guide.value}</p>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <Button
+                onClick={() => setGuideIndex(Math.max(0, guideIndex - 1))}
+                icon={<Play size={16} />}
+              >
+                Previous
+              </Button>
+              <Button
+                onClick={() => setGuideIndex(Math.min(guidedSteps.length - 1, guideIndex + 1))}
+                icon={<Play size={16} />}
+              >
+                Next
+              </Button>
+              <Button onClick={onExportReport} icon={<Upload size={16} />}>
+                Export
+              </Button>
+            </div>
+          </div>
+          {exportPaths ? (
+            <p className="mt-3 text-sm text-emerald-300">
+              Demo report exported: {exportPaths.report}
+            </p>
+          ) : null}
+        </Panel>
 
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
           <Stat label="Epoch" value={String(snapshot.epoch)} />
@@ -259,6 +313,19 @@ export function VisualTrainingDemoView({
             </Panel>
 
             <Panel title="Final inference test">
+              <select
+                className="mb-3 w-full rounded-md border border-slate-700 bg-slate-950 px-3 py-2 text-sm"
+                value={selectedCheckpointId}
+                onChange={(event) => setSelectedCheckpointId(event.target.value)}
+              >
+                <option value="latest">Latest model</option>
+                <option value="earliest">Early model</option>
+                {snapshot.checkpoints.map((checkpoint) => (
+                  <option key={checkpoint.id} value={checkpoint.id}>
+                    {checkpoint.id} / {Math.round(checkpoint.accuracy * 100)}%
+                  </option>
+                ))}
+              </select>
               <label className="flex cursor-pointer items-center justify-center gap-2 rounded-md border border-dashed border-slate-700 p-4 text-sm text-slate-300 hover:bg-slate-800">
                 <Upload size={18} />
                 Upload image for current model
@@ -266,7 +333,9 @@ export function VisualTrainingDemoView({
                   className="hidden"
                   type="file"
                   accept="image/*"
-                  onChange={(event) => void handleUpload(event, onPredict)}
+                  onChange={(event) =>
+                    void handleUpload(event, selectedCheckpointId, onPredict, onCompare)
+                  }
                 />
               </label>
               {inference ? (
@@ -275,10 +344,36 @@ export function VisualTrainingDemoView({
                   <p className="text-xl font-semibold">{inference.predictedClass}</p>
                   <p className="text-sm text-slate-400">
                     confidence {Math.round(inference.confidence * 100)}% / checkpoint{" "}
-                    {inference.modelCheckpoint}
+                    {inference.checkpointId} / {inference.latencyMs.toFixed(1)} ms
                   </p>
+                  <ConfidenceBar value={inference.confidence} />
                 </div>
               ) : null}
+              {comparison ? (
+                <div className="mt-3 grid gap-2 rounded-md border border-slate-700 bg-slate-950 p-3 text-sm">
+                  <p className="font-medium">Early model vs selected model</p>
+                  <KeyValue
+                    label={`Early (${comparison.early.checkpointId})`}
+                    value={`${comparison.early.predictedClass} ${Math.round(
+                      comparison.early.confidence * 100,
+                    )}%`}
+                  />
+                  <KeyValue
+                    label={`Selected (${comparison.selected.checkpointId})`}
+                    value={`${comparison.selected.predictedClass} ${Math.round(
+                      comparison.selected.confidence * 100,
+                    )}%`}
+                  />
+                </div>
+              ) : null}
+              <div className="mt-3 space-y-2">
+                {snapshot.inferenceHistory.slice(-4).map((item) => (
+                  <div key={`${item.checkpointId}-${item.latencyMs}`} className="text-xs text-slate-500">
+                    {item.modelVersion}: {item.predictedClass} /{" "}
+                    {Math.round(item.confidence * 100)}% / {item.latencyMs.toFixed(1)} ms
+                  </div>
+                ))}
+              </div>
             </Panel>
           </aside>
         </div>
@@ -387,6 +482,17 @@ function KeyValue({ label, value }: { label: string; value: string }) {
   );
 }
 
+function ConfidenceBar({ value }: { value: number }) {
+  return (
+    <div className="mt-3 h-2 overflow-hidden rounded-full bg-slate-800">
+      <div
+        className="h-full rounded-full bg-emerald-400"
+        style={{ width: `${Math.round(value * 100)}%` }}
+      />
+    </div>
+  );
+}
+
 function Chart({
   data,
   lines,
@@ -426,12 +532,19 @@ function Chart({
 
 async function handleUpload(
   event: ChangeEvent<HTMLInputElement>,
-  onPredict: (imageDataUrl: string) => void,
+  checkpointId: string,
+  onPredict: (imageDataUrl: string, checkpointId?: string) => void,
+  onCompare: (
+    imageDataUrl: string,
+    baselineCheckpointId?: string,
+    candidateCheckpointId?: string,
+  ) => void,
 ) {
   const file = event.target.files?.[0];
   if (!file) return;
   const imageDataUrl = await readFile(file);
-  onPredict(imageDataUrl);
+  onPredict(imageDataUrl, checkpointId);
+  onCompare(imageDataUrl, "earliest", checkpointId);
 }
 
 function readFile(file: File): Promise<string> {
@@ -442,3 +555,36 @@ function readFile(file: File): Promise<string> {
     reader.readAsDataURL(file);
   });
 }
+
+const guidedSteps = [
+  {
+    title: "What ACN is",
+    viewer: "ACN is an adaptive training control system, not just one trained model.",
+    value: "It watches training, saves model versions and keeps the process explainable.",
+  },
+  {
+    title: "Initial poor predictions",
+    viewer: "At the beginning the model guesses and confidence is unstable.",
+    value: "This makes learning visible: predictions should improve as metrics improve.",
+  },
+  {
+    title: "Learning progress",
+    viewer: "Accuracy rises while loss falls, and checkpoint versions appear.",
+    value: "Checkpoint = a save point of model state that can be restored later.",
+  },
+  {
+    title: "Degradation",
+    viewer: "A bad learning-rate spike makes validation loss worse.",
+    value: "ACN detects that the model is moving in the wrong direction.",
+  },
+  {
+    title: "Rollback",
+    viewer: "ACN restores the last stable checkpoint and lowers the learning rate.",
+    value: "Rollback = restoring a known-good model instead of manually restarting work.",
+  },
+  {
+    title: "Final inference",
+    viewer: "Upload an image and compare early vs selected model versions.",
+    value: "The demo proves adaptive training produced a usable model version.",
+  },
+] as const;

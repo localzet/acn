@@ -29,6 +29,17 @@ def test_visual_demo_state_contract() -> None:
         "runtimeStatus",
         "mlflowRunId",
         "artifacts",
+        "inferenceHistory",
     }
     assert payload["currentBranch"] == "main"
     assert isinstance(payload["metrics"], list)
+
+
+def test_visual_demo_export_report_contract() -> None:
+    client = TestClient(create_app(Settings(env="test")))
+
+    response = client.post("/api/v1/demo/export")
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert {"report", "metrics", "timeline", "finalModelInfo", "screenshot"} <= set(payload)

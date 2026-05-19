@@ -8,11 +8,13 @@ FastAPI demo endpoints.
 import base64
 import copy
 import io
+import json
 import random
 import threading
 import time
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
+from pathlib import Path
 from typing import Literal, TypedDict, cast
 
 import torch
@@ -22,6 +24,8 @@ from torch import Tensor, nn
 
 from acn.artifacts import CheckpointArtifactPayload
 from acn.config.settings import Settings
+from acn.inference import InferenceComparisonResult, InferenceResult, InferenceService
+from acn.inference.preprocessing import ImagePreprocessor
 from acn.runtime import RuntimeStack, RuntimeStatus
 
 ClassName = Literal["airplane", "ship"]
@@ -79,6 +83,19 @@ class VisualDemoDecision(TypedDict):
     createdAt: str
 
 
+class VisualDemoInference(TypedDict):
+    predictedClass: str
+    confidence: float
+    checkpointId: str
+    modelVersion: str
+    latencyMs: float
+
+
+class VisualDemoComparison(TypedDict):
+    early: VisualDemoInference
+    selected: VisualDemoInference
+
+
 class VisualDemoSnapshot(TypedDict):
     status: DemoStatus
     autoMode: bool
@@ -97,6 +114,7 @@ class VisualDemoSnapshot(TypedDict):
     runtimeStatus: dict[str, dict[str, str | bool]]
     mlflowRunId: str | None
     artifacts: list[dict[str, str | int | float | bool | None]]
+    inferenceHistory: list[VisualDemoInference]
 
 
 @dataclass(slots=True)
@@ -172,6 +190,13 @@ class VisualDemoSession:
         self._runtime_status: RuntimeStatus | None = None
         self._mlflow_run_id: str | None = None
         self._experiment_id = "exp_visual_demo"
+        self._preprocessor = ImagePreprocessor(size=32)
+        self._inference = InferenceService(
+            model_factory=TinyVisualClassifier,
+            class_names=("airplane", "ship"),
+            device=self._device,
+        )
+        self._inference_history: list[VisualDemoInference] = []
 
     def configure_runtime(self, settings: Settings) -> None:
         if not settings.runtime_stack_enabled:
@@ -213,6 +238,7 @@ class VisualDemoSession:
                 "runtimeStatus": _runtime_status_dict(self._runtime_status),
                 "mlflowRunId": self._mlflow_run_id,
                 "artifacts": self._runtime.artifact_browser() if self._runtime is not None else [],
+                "inferenceHistory": list(self._inference_history[-20:]),
             }
 
     def start(self, *, auto_mode: bool = True) -> VisualDemoSnapshot:
@@ -275,14 +301,71 @@ class VisualDemoSession:
             self._restore_best_checkpoint()
             return self.snapshot()
 
-    def predict_data_url(self, image_data_url: str) -> dict[str, str | float]:
-        tensor = _tensor_from_data_url(image_data_url).to(self._device)
-        predicted, confidence = self._predict_tensor(tensor)
-        return {
-            "predictedClass": predicted,
-            "confidence": confidence,
-            "modelCheckpoint": self.snapshot()["activeCheckpointId"] or "uncommitted",
+    def predict_data_url(
+        self,
+        image_data_url: str,
+        *,
+        checkpoint_id: str | None = None,
+    ) -> VisualDemoInference:
+        checkpoint = self._resolve_checkpoint(checkpoint_id)
+        result = self._inference.predict(
+            image=self._preprocessor.from_data_url(image_data_url),
+            model_state=checkpoint.model_state,
+            checkpoint_id=checkpoint.id,
+            model_version="selected" if checkpoint_id is not None else "active",
+        )
+        response = _inference_response(result)
+        with self._lock:
+            self._inference_history.append(response)
+        return response
+
+    def compare_data_url(
+        self,
+        image_data_url: str,
+        *,
+        baseline_checkpoint_id: str | None = None,
+        candidate_checkpoint_id: str | None = None,
+    ) -> VisualDemoComparison:
+        baseline = self._resolve_checkpoint(baseline_checkpoint_id or "earliest")
+        candidate = self._resolve_checkpoint(candidate_checkpoint_id or "latest")
+        comparison = self._inference.compare(
+            image=self._preprocessor.from_data_url(image_data_url),
+            baseline_state=baseline.model_state,
+            baseline_checkpoint_id=baseline.id,
+            candidate_state=candidate.model_state,
+            candidate_checkpoint_id=candidate.id,
+        )
+        return _comparison_response(comparison)
+
+    def export_report(self) -> dict[str, str]:
+        snapshot = self.snapshot()
+        output_dir = Path("experiments/acn-guided-demo")
+        output_dir.mkdir(parents=True, exist_ok=True)
+        paths = {
+            "report": output_dir / "guided_demo_summary.md",
+            "metrics": output_dir / "metrics.json",
+            "timeline": output_dir / "timeline.json",
+            "finalModelInfo": output_dir / "final_model_info.json",
+            "screenshot": output_dir / "guided_demo_screenshot.svg",
         }
+        paths["metrics"].write_text(json.dumps(snapshot["metrics"], indent=2), encoding="utf-8")
+        paths["timeline"].write_text(json.dumps(snapshot["events"], indent=2), encoding="utf-8")
+        paths["finalModelInfo"].write_text(
+            json.dumps(
+                {
+                    "bestModelVersion": snapshot["activeCheckpointId"],
+                    "bestAccuracy": _best_accuracy(snapshot),
+                    "rollbackCount": snapshot["rollbackCount"],
+                    "totalCheckpoints": len(snapshot["checkpoints"]),
+                    "mlflowRunId": snapshot["mlflowRunId"],
+                },
+                indent=2,
+            ),
+            encoding="utf-8",
+        )
+        paths["report"].write_text(_guided_report(snapshot), encoding="utf-8")
+        paths["screenshot"].write_text(_screenshot_svg(snapshot), encoding="utf-8")
+        return {key: str(path) for key, path in paths.items()}
 
     def _run(self) -> None:
         try:
@@ -619,6 +702,27 @@ class VisualDemoSession:
             metadata={"controller_state": self._state.controller_state},
         )
 
+    def _resolve_checkpoint(self, checkpoint_id: str | None) -> _CheckpointState:
+        if not self._state.checkpoints:
+            return _CheckpointState(
+                id="untrained",
+                epoch=0,
+                validation_loss=0.0,
+                accuracy=0.0,
+                model_state=copy.deepcopy(self._model.state_dict()),
+                optimizer_state=copy.deepcopy(self._optimizer.state_dict()),
+                stable=False,
+                created_at=_now(),
+            )
+        if checkpoint_id == "earliest":
+            return self._state.checkpoints[0]
+        if checkpoint_id is None or checkpoint_id == "latest":
+            return self._state.checkpoints[-1]
+        for checkpoint in self._state.checkpoints:
+            if checkpoint.id == checkpoint_id:
+                return checkpoint
+        return self._state.checkpoints[-1]
+
 
 def _build_dataset(*, samples: int, seed: int) -> list[tuple[Tensor, int]]:
     rng = random.Random(seed)  # noqa: S311 - deterministic visual demo data generation.
@@ -647,12 +751,6 @@ def _render_sample(*, label: int, rng: random.Random) -> tuple[Tensor, int]:
         )
 
     return _pil_to_tensor(image), label
-
-
-def _tensor_from_data_url(data_url: str) -> Tensor:
-    _, _, payload = data_url.partition(",")
-    image = Image.open(io.BytesIO(base64.b64decode(payload))).convert("RGB").resize((32, 32))
-    return _pil_to_tensor(image)
 
 
 def _pil_to_tensor(image: object) -> Tensor:
@@ -714,6 +812,85 @@ def _runtime_status_dict(status: RuntimeStatus | None) -> dict[str, dict[str, st
             "message": status.artifact_storage.message,
         },
     }
+
+
+def _inference_response(result: InferenceResult) -> VisualDemoInference:
+    return {
+        "predictedClass": result.predicted_class,
+        "confidence": result.confidence,
+        "checkpointId": result.checkpoint_id,
+        "modelVersion": result.model_version,
+        "latencyMs": result.latency_ms,
+    }
+
+
+def _comparison_response(result: InferenceComparisonResult) -> VisualDemoComparison:
+    return {
+        "early": _inference_response(result.baseline),
+        "selected": _inference_response(result.candidate),
+    }
+
+
+def _best_accuracy(snapshot: VisualDemoSnapshot) -> float:
+    if not snapshot["metrics"]:
+        return 0.0
+    return max(metric["accuracy"] for metric in snapshot["metrics"])
+
+
+def _guided_report(snapshot: VisualDemoSnapshot) -> str:
+    lines = [
+        "# ACN Guided Demo Summary",
+        "",
+        "ACN is an adaptive training control system. It watches model learning, saves model",
+        "checkpoints, detects degradation, restores a stable version and keeps the experiment",
+        "traceable.",
+        "",
+        "## Final Showcase",
+        "",
+        f"- Best model version: `{snapshot['activeCheckpointId'] or 'untrained'}`",
+        f"- Best accuracy: `{_best_accuracy(snapshot):.2%}`",
+        f"- Rollbacks: `{snapshot['rollbackCount']}`",
+        f"- Checkpoints: `{len(snapshot['checkpoints'])}`",
+        f"- MLflow run: `{snapshot['mlflowRunId'] or 'offline'}`",
+        "",
+        "## Why This Matters",
+        "",
+        "- Less manual experiment babysitting.",
+        "- Safer training because unstable model states can be rolled back.",
+        "- Better traceability through checkpoints, commits and event history.",
+        "- A usable trained model can be tested immediately after training.",
+        "",
+    ]
+    return "\n".join(lines)
+
+
+def _screenshot_svg(snapshot: VisualDemoSnapshot) -> str:
+    accuracy = _best_accuracy(snapshot) * 100
+    rollback_count = snapshot["rollbackCount"]
+    checkpoint_count = len(snapshot["checkpoints"])
+    return "\n".join(
+        [
+            '<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720">',
+            '<rect width="1280" height="720" fill="#020617"/>',
+            '<text x="72" y="96" fill="#67e8f9" font-size="28" font-family="Arial">',
+            "Adaptive Core Network Demo</text>",
+            '<text x="72" y="156" fill="#f8fafc" font-size="48" font-family="Arial">',
+            "Learn. Fail. Recover. Improve.</text>",
+            (
+                '<text x="72" y="250" fill="#22c55e" font-size="32" '
+                f'font-family="Arial">Best accuracy: {accuracy:.1f}%</text>'
+            ),
+            (
+                '<text x="72" y="305" fill="#f59e0b" font-size="32" '
+                f'font-family="Arial">Rollbacks: {rollback_count}</text>'
+            ),
+            (
+                '<text x="72" y="360" fill="#38bdf8" font-size="32" '
+                f'font-family="Arial">Checkpoints: {checkpoint_count}</text>'
+            ),
+            "</svg>",
+        ]
+    )
 
 
 def _now() -> str:

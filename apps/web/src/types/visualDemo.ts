@@ -75,12 +75,20 @@ export type VisualDemoSnapshot = {
   runtimeStatus: Record<string, { connected: boolean; message: string }>;
   mlflowRunId: string | null;
   artifacts: VisualDemoArtifact[];
+  inferenceHistory: VisualDemoInference[];
 };
 
 export type VisualDemoInference = {
   predictedClass: string;
   confidence: number;
-  modelCheckpoint: string;
+  checkpointId: string;
+  modelVersion: string;
+  latencyMs: number;
+};
+
+export type VisualDemoComparison = {
+  early: VisualDemoInference;
+  selected: VisualDemoInference;
 };
 
 export type VisualDemoArtifact = {

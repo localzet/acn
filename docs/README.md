@@ -28,3 +28,5 @@ Included:
 - Development rules
 - Visual demo architecture
 - Runtime stack
+- Guided demo script
+- Inference showcase

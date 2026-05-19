@@ -62,6 +62,8 @@ export function App() {
         snapshot={visualDemo.snapshot}
         error={visualDemo.error}
         inference={visualDemo.inference}
+        comparison={visualDemo.comparison}
+        exportPaths={visualDemo.exportPaths}
         onStart={visualDemo.start}
         onPause={visualDemo.pause}
         onResume={visualDemo.resume}
@@ -70,6 +72,8 @@ export function App() {
         onApprove={visualDemo.approve}
         onReject={visualDemo.reject}
         onPredict={visualDemo.predict}
+        onCompare={visualDemo.compare}
+        onExportReport={visualDemo.exportReport}
       />
     );
   }

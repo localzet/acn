@@ -6,7 +6,12 @@ from fastapi import APIRouter
 from pydantic import BaseModel, ConfigDict
 from starlette.responses import StreamingResponse
 
-from acn.experiments.visual_demo import VisualDemoSnapshot, visual_demo_session
+from acn.experiments.visual_demo import (
+    VisualDemoComparison,
+    VisualDemoInference,
+    VisualDemoSnapshot,
+    visual_demo_session,
+)
 
 router = APIRouter(prefix="/api/v1/demo", tags=["visual-demo"])
 
@@ -33,6 +38,15 @@ class PredictRequest(BaseModel):
     model_config = ConfigDict(extra="ignore")
 
     image_data_url: str
+    checkpoint_id: str | None = None
+
+
+class CompareRequest(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+
+    image_data_url: str
+    baseline_checkpoint_id: str | None = None
+    candidate_checkpoint_id: str | None = None
 
 
 @router.get("/state")
@@ -76,8 +90,25 @@ async def reject_decision(payload: DecisionRequest) -> VisualDemoSnapshot:
 
 
 @router.post("/predict")
-async def predict(payload: PredictRequest) -> dict[str, str | float]:
-    return visual_demo_session.predict_data_url(payload.image_data_url)
+async def predict(payload: PredictRequest) -> VisualDemoInference:
+    return visual_demo_session.predict_data_url(
+        payload.image_data_url,
+        checkpoint_id=payload.checkpoint_id,
+    )
+
+
+@router.post("/compare")
+async def compare(payload: CompareRequest) -> VisualDemoComparison:
+    return visual_demo_session.compare_data_url(
+        payload.image_data_url,
+        baseline_checkpoint_id=payload.baseline_checkpoint_id,
+        candidate_checkpoint_id=payload.candidate_checkpoint_id,
+    )
+
+
+@router.post("/export")
+async def export_report() -> dict[str, str]:
+    return visual_demo_session.export_report()
 
 
 @router.get("/events")

@@ -1,5 +1,9 @@
 import { appConfig } from "../config";
-import type { VisualDemoInference, VisualDemoSnapshot } from "../types/visualDemo";
+import type {
+  VisualDemoComparison,
+  VisualDemoInference,
+  VisualDemoSnapshot,
+} from "../types/visualDemo";
 
 const demoBaseUrl = `${appConfig.apiBaseUrl}/api/v1/demo`;
 
@@ -26,6 +30,7 @@ export const emptyVisualDemoSnapshot: VisualDemoSnapshot = {
   },
   mlflowRunId: null,
   artifacts: [],
+  inferenceHistory: [],
 };
 
 export async function fetchVisualDemoState(): Promise<VisualDemoSnapshot> {
@@ -60,19 +65,53 @@ export async function rejectVisualDemoDecision(decisionId: string): Promise<Visu
   return requestSnapshot("/reject", { decision_id: decisionId });
 }
 
-export async function predictVisualDemoImage(imageDataUrl: string): Promise<VisualDemoInference> {
+export async function predictVisualDemoImage(
+  imageDataUrl: string,
+  checkpointId?: string,
+): Promise<VisualDemoInference> {
   const response = await fetch(`${demoBaseUrl}/predict`, {
     method: "POST",
     headers: {
       Accept: "application/json",
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({ image_data_url: imageDataUrl }),
+    body: JSON.stringify({ image_data_url: imageDataUrl, checkpoint_id: checkpointId }),
   });
   if (!response.ok) {
     throw new Error(`Prediction failed with ${response.status}`);
   }
   return (await response.json()) as VisualDemoInference;
+}
+
+export async function compareVisualDemoImage(
+  imageDataUrl: string,
+  baselineCheckpointId?: string,
+  candidateCheckpointId?: string,
+): Promise<VisualDemoComparison> {
+  const response = await fetch(`${demoBaseUrl}/compare`, {
+    method: "POST",
+    headers: {
+      Accept: "application/json",
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      image_data_url: imageDataUrl,
+      baseline_checkpoint_id: baselineCheckpointId,
+      candidate_checkpoint_id: candidateCheckpointId,
+    }),
+  });
+  if (!response.ok) {
+    throw new Error(`Prediction comparison failed with ${response.status}`);
+  }
+  return (await response.json()) as VisualDemoComparison;
+}
+
+export async function exportVisualDemoReport(): Promise<Record<string, string>> {
+  const response = await fetch(`${demoBaseUrl}/export`, { method: "POST" });
+  if (!response.ok) {
+    throw new Error(`Demo export failed with ${response.status}`);
+  }
+  return (await response.json()) as Record<string, string>;
 }
 
 export function visualDemoEventsUrl(): string {

@@ -44,6 +44,9 @@ Use `AUTO` for fully automatic rollback. Toggle to `MANUAL` to pause before crit
 approve or reject the controller action. After training, upload an image in the final inference
 panel to run prediction against the current model checkpoint.
 
+The guided presentation script is in `docs/28_guided_demo_script.md`. The post-training
+inference showcase is documented in `docs/29_inference_showcase.md`.
+
 For a full infrastructure-backed demo, use Docker Compose:
 
 ```bash
