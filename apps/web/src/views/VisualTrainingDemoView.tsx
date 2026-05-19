@@ -10,7 +10,7 @@ import {
   XCircle,
 } from "lucide-react";
 import { useState } from "react";
-import type { ChangeEvent } from "react";
+import type { ChangeEvent, DragEvent } from "react";
 import type { ReactNode } from "react";
 import {
   CartesianGrid,
@@ -72,6 +72,7 @@ export function VisualTrainingDemoView({
   const [guideIndex, setGuideIndex] = useState(0);
   const [selectedCheckpointId, setSelectedCheckpointId] = useState<string>("latest");
   const guide = guidedSteps[guideIndex];
+  const inferenceStats = buildInferenceStats(snapshot.inferenceHistory);
 
   return (
     <main className="min-h-screen bg-slate-950 text-slate-100">
@@ -168,7 +169,7 @@ export function VisualTrainingDemoView({
               </div>
             </Panel>
 
-            <Panel title="Current validation predictions">
+            <Panel title="Validation examples gallery">
               <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
                 {snapshot.predictions.map((prediction) => (
                   <div
@@ -313,6 +314,20 @@ export function VisualTrainingDemoView({
             </Panel>
 
             <Panel title="Final inference test">
+              <div className="mb-3 grid gap-2 text-sm">
+                <KeyValue
+                  label="Average confidence"
+                  value={`${Math.round(inferenceStats.averageConfidence * 100)}%`}
+                />
+                <KeyValue
+                  label="Average latency"
+                  value={`${inferenceStats.averageLatencyMs.toFixed(1)} ms`}
+                />
+                <KeyValue
+                  label="Prediction distribution"
+                  value={formatDistribution(inferenceStats.distribution)}
+                />
+              </div>
               <select
                 className="mb-3 w-full rounded-md border border-slate-700 bg-slate-950 px-3 py-2 text-sm"
                 value={selectedCheckpointId}
@@ -326,9 +341,15 @@ export function VisualTrainingDemoView({
                   </option>
                 ))}
               </select>
-              <label className="flex cursor-pointer items-center justify-center gap-2 rounded-md border border-dashed border-slate-700 p-4 text-sm text-slate-300 hover:bg-slate-800">
+              <label
+                className="flex cursor-pointer items-center justify-center gap-2 rounded-md border border-dashed border-slate-700 p-4 text-sm text-slate-300 hover:bg-slate-800"
+                onDragOver={(event) => event.preventDefault()}
+                onDrop={(event) =>
+                  void handleDrop(event, selectedCheckpointId, onPredict, onCompare)
+                }
+              >
                 <Upload size={18} />
-                Upload image for current model
+                Drag image here or click to test trained model
                 <input
                   className="hidden"
                   type="file"
@@ -368,7 +389,10 @@ export function VisualTrainingDemoView({
               ) : null}
               <div className="mt-3 space-y-2">
                 {snapshot.inferenceHistory.slice(-4).map((item) => (
-                  <div key={`${item.checkpointId}-${item.latencyMs}`} className="text-xs text-slate-500">
+                  <div
+                    key={`${item.checkpointId}-${item.latencyMs}`}
+                    className="text-xs text-slate-500"
+                  >
                     {item.modelVersion}: {item.predictedClass} /{" "}
                     {Math.round(item.confidence * 100)}% / {item.latencyMs.toFixed(1)} ms
                   </div>
@@ -547,6 +571,24 @@ async function handleUpload(
   onCompare(imageDataUrl, "earliest", checkpointId);
 }
 
+async function handleDrop(
+  event: DragEvent<HTMLLabelElement>,
+  checkpointId: string,
+  onPredict: (imageDataUrl: string, checkpointId?: string) => void,
+  onCompare: (
+    imageDataUrl: string,
+    baselineCheckpointId?: string,
+    candidateCheckpointId?: string,
+  ) => void,
+) {
+  event.preventDefault();
+  const file = event.dataTransfer.files[0];
+  if (!file) return;
+  const imageDataUrl = await readFile(file);
+  onPredict(imageDataUrl, checkpointId);
+  onCompare(imageDataUrl, "earliest", checkpointId);
+}
+
 function readFile(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -554,6 +596,25 @@ function readFile(file: File): Promise<string> {
     reader.onerror = () => reject(reader.error);
     reader.readAsDataURL(file);
   });
+}
+
+function buildInferenceStats(history: VisualDemoSnapshot["inferenceHistory"]) {
+  const count = history.length;
+  const averageConfidence =
+    count === 0 ? 0 : history.reduce((sum, item) => sum + item.confidence, 0) / count;
+  const averageLatencyMs =
+    count === 0 ? 0 : history.reduce((sum, item) => sum + item.latencyMs, 0) / count;
+  const distribution = history.reduce<Record<string, number>>((accumulator, item) => {
+    accumulator[item.predictedClass] = (accumulator[item.predictedClass] ?? 0) + 1;
+    return accumulator;
+  }, {});
+  return { averageConfidence, averageLatencyMs, distribution };
+}
+
+function formatDistribution(distribution: Record<string, number>) {
+  const entries = Object.entries(distribution);
+  if (entries.length === 0) return "no predictions yet";
+  return entries.map(([label, count]) => `${label}: ${count}`).join(" / ");
 }
 
 const guidedSteps = [

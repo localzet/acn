@@ -346,10 +346,20 @@ class VisualDemoSession:
             "metrics": output_dir / "metrics.json",
             "timeline": output_dir / "timeline.json",
             "finalModelInfo": output_dir / "final_model_info.json",
+            "predictionResults": output_dir / "prediction_results.json",
+            "modelMetadata": output_dir / "model_metadata.json",
             "screenshot": output_dir / "guided_demo_screenshot.svg",
         }
         paths["metrics"].write_text(json.dumps(snapshot["metrics"], indent=2), encoding="utf-8")
         paths["timeline"].write_text(json.dumps(snapshot["events"], indent=2), encoding="utf-8")
+        paths["predictionResults"].write_text(
+            json.dumps(snapshot["inferenceHistory"], indent=2),
+            encoding="utf-8",
+        )
+        paths["modelMetadata"].write_text(
+            json.dumps(snapshot["checkpoints"], indent=2),
+            encoding="utf-8",
+        )
         paths["finalModelInfo"].write_text(
             json.dumps(
                 {

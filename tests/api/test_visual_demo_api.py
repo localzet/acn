@@ -42,4 +42,12 @@ def test_visual_demo_export_report_contract() -> None:
 
     assert response.status_code == 200
     payload = response.json()
-    assert {"report", "metrics", "timeline", "finalModelInfo", "screenshot"} <= set(payload)
+    assert {
+        "report",
+        "metrics",
+        "timeline",
+        "finalModelInfo",
+        "predictionResults",
+        "modelMetadata",
+        "screenshot",
+    } <= set(payload)

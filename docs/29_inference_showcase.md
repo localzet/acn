@@ -13,6 +13,7 @@ The inference showcase is part of `Live Demo`.
 - Run prediction.
 - See predicted class, confidence, checkpoint ID, model version and latency.
 - Compare early model vs selected/final model.
+- See average confidence, average latency and prediction distribution.
 - Review prediction history.
 
 ## Local Flow
@@ -98,6 +99,8 @@ The demo export writes:
 - metrics JSON;
 - timeline JSON;
 - final model info;
+- prediction results;
+- model metadata;
 - screenshot-ready SVG.
 
 Endpoint:
