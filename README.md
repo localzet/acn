@@ -5,6 +5,8 @@ training workflows. The current platform is a local research system targeted at 
 workstation with Python 3.12, PyTorch, FastAPI, PostgreSQL-compatible repositories, Docker
 Compose services and a React dashboard.
 
+<img src=".github/demo.jpeg">
+
 ACN currently supports:
 
 - PyTorch trainer core with checkpointing, mixed precision, optimizers and schedulers;
