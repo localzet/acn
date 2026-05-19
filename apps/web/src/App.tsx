@@ -47,7 +47,7 @@ type ViewId = (typeof navItems)[number]["id"];
 
 export function App() {
   const demoPlayback = useDemoPlayback();
-  const [activeView, setActiveView] = useState<ViewId>("commits");
+  const [activeView, setActiveView] = useState<ViewId>("live-demo");
   const [darkMode, setDarkMode] = useState(true);
   const { snapshot, connection, error, refresh, submitOverride } = useDashboardData();
   const visualDemo = useVisualDemo();
@@ -66,27 +66,27 @@ export function App() {
     return <DemoPresentationView playback={demoPlayback} />;
   }
 
-  if (activeView === "live-demo") {
-    return (
-      <VisualTrainingDemoView
-        snapshot={visualDemo.snapshot}
-        error={visualDemo.error}
-        inference={visualDemo.inference}
-        comparison={visualDemo.comparison}
-        exportPaths={visualDemo.exportPaths}
-        onStart={visualDemo.start}
-        onPause={visualDemo.pause}
-        onResume={visualDemo.resume}
-        onRollback={visualDemo.rollback}
-        onSetAutoMode={visualDemo.setAutoMode}
-        onApprove={visualDemo.approve}
-        onReject={visualDemo.reject}
-        onPredict={visualDemo.predict}
-        onCompare={visualDemo.compare}
-        onExportReport={visualDemo.exportReport}
-      />
-    );
-  }
+  // if (activeView === "live-demo") {
+  //   return (
+  //     <VisualTrainingDemoView
+  //       snapshot={visualDemo.snapshot}
+  //       error={visualDemo.error}
+  //       inference={visualDemo.inference}
+  //       comparison={visualDemo.comparison}
+  //       exportPaths={visualDemo.exportPaths}
+  //       onStart={visualDemo.start}
+  //       onPause={visualDemo.pause}
+  //       onResume={visualDemo.resume}
+  //       onRollback={visualDemo.rollback}
+  //       onSetAutoMode={visualDemo.setAutoMode}
+  //       onApprove={visualDemo.approve}
+  //       onReject={visualDemo.reject}
+  //       onPredict={visualDemo.predict}
+  //       onCompare={visualDemo.compare}
+  //       onExportReport={visualDemo.exportReport}
+  //     />
+  //   );
+  // }
 
   return (
     <div className={darkMode ? "dark" : ""}>
@@ -115,11 +115,10 @@ export function App() {
               return (
                 <button
                   key={item.id}
-                  className={`inline-flex min-w-fit items-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition ${
-                    selected
-                      ? "bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-950"
-                      : "text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-900"
-                  }`}
+                  className={`inline-flex min-w-fit items-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition ${selected
+                    ? "bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-950"
+                    : "text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-900"
+                    }`}
                   type="button"
                   onClick={() => setActiveView(item.id)}
                 >
@@ -173,6 +172,23 @@ export function App() {
             ))}
           </div>
 
+          {activeView === "live-demo" && <VisualTrainingDemoView
+            snapshot={visualDemo.snapshot}
+            error={visualDemo.error}
+            inference={visualDemo.inference}
+            comparison={visualDemo.comparison}
+            exportPaths={visualDemo.exportPaths}
+            onStart={visualDemo.start}
+            onPause={visualDemo.pause}
+            onResume={visualDemo.resume}
+            onRollback={visualDemo.rollback}
+            onSetAutoMode={visualDemo.setAutoMode}
+            onApprove={visualDemo.approve}
+            onReject={visualDemo.reject}
+            onPredict={visualDemo.predict}
+            onCompare={visualDemo.compare}
+            onExportReport={visualDemo.exportReport}
+          />}
           {activeView === "commits" && <CommitGraphView graph={snapshot.commitGraph} />}
           {activeView === "branches" && <BranchGraphView graph={snapshot.branchGraph} />}
           {activeView === "metrics" && <MetricsTimelineView metrics={snapshot.metricsTimeline} />}
@@ -199,11 +215,10 @@ function StatusBadge({ connection }: { connection: string }) {
   const online = connection === "connected";
   return (
     <span
-      className={`inline-flex items-center gap-2 rounded-md border px-3 py-2 text-sm ${
-        online
-          ? "border-emerald-300 bg-emerald-50 text-emerald-700 dark:border-emerald-500/40 dark:bg-emerald-500/10 dark:text-emerald-200"
-          : "border-slate-300 bg-white text-slate-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300"
-      }`}
+      className={`inline-flex items-center gap-2 rounded-md border px-3 py-2 text-sm ${online
+        ? "border-emerald-300 bg-emerald-50 text-emerald-700 dark:border-emerald-500/40 dark:bg-emerald-500/10 dark:text-emerald-200"
+        : "border-slate-300 bg-white text-slate-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300"
+        }`}
     >
       <Activity size={16} />
       {connection}

@@ -21,7 +21,8 @@ def test_dashboard_snapshot_contract_returns_frontend_shape() -> None:
         "liveLogs",
     }
     assert payload["commitGraph"] == {"nodes": [], "edges": []}
-    assert payload["branchGraph"] == {"nodes": [], "edges": []}
+    assert payload["branchGraph"]["nodes"][0]["id"] == "visual-demo"
+    assert payload["experiments"][0]["id"] == "exp_visual_demo"
 
 
 def test_dashboard_snapshot_allows_local_vite_origins() -> None:
@@ -66,3 +67,4 @@ def test_dashboard_websocket_sends_snapshot_event() -> None:
 
     assert message["type"] == "snapshot"
     assert message["payload"]["commitGraph"] == {"nodes": [], "edges": []}
+    assert message["payload"]["branchGraph"]["nodes"][0]["id"] == "visual-demo"

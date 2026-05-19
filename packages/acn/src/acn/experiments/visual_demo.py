@@ -669,6 +669,9 @@ class VisualDemoSession:
         self._model = TinyVisualClassifier().to(self._device)
         self._optimizer = torch.optim.AdamW(self._model.parameters(), lr=2e-3)
         self._mlflow_run_id = None
+        self._inference_history = []
+        self._refresh_predictions()
+        self._event("info", "Untrained baseline predictions are visible before learning starts.")
 
     def _event(self, level: str, message: str) -> None:
         self._state.events.append(

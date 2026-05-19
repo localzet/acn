@@ -65,6 +65,28 @@ With `ACN_RUNTIME_STACK_ENABLED=true`, the live demo persists commits, checkpoin
 rollback events to PostgreSQL, stores checkpoint artifacts in MinIO and logs metrics/artifacts to
 MLflow. See `docs/27_runtime_stack.md`.
 
+The current visual demo intentionally uses a fixed quick-run preset:
+
+- dataset: generated labeled airplane-vs-ship images;
+- model: small CNN suitable for RTX 3060 laptop demos;
+- adaptive scenario: intentional learning-rate spike, degradation detection, rollback and recovery.
+
+For custom datasets, the expected intake model is class-folder labeling:
+
+```text
+dataset/
+  train/
+    ship/*.png
+    airplane/*.png
+  val/
+    ship/*.png
+    airplane/*.png
+```
+
+The UI now shows this flow as `Experiment setup`. Full custom dataset upload/model selection is
+not wired as a production workflow yet; the demo preset exists to make the adaptive loop reliable
+and visually understandable for a 5-minute presentation.
+
 ## Requirements
 
 - Python 3.12

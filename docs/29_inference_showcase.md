@@ -25,6 +25,31 @@ The inference showcase is part of `Live Demo`.
 5. Upload an image in `Final inference test`.
 6. Compare `Early model` against `Latest model`.
 
+## Dataset and Model Selection
+
+The current live showcase uses one fixed preset so a manager-facing demo is reproducible:
+
+- dataset: generated labeled airplane-vs-ship images;
+- labeling model: class folders or generated labels, one class per image;
+- model: `TinyVisualClassifier`;
+- scenario: learning-rate spike, rollback, recovery and final inference.
+
+For a real user-supplied image dataset, ACN should ingest data in a class-folder layout:
+
+```text
+dataset/
+  train/
+    class_a/*.jpg
+    class_b/*.jpg
+  val/
+    class_a/*.jpg
+    class_b/*.jpg
+```
+
+Custom dataset upload and arbitrary model selection are intentionally not exposed as production UI
+controls yet. The demo UI shows the expected process, while the current runnable preset keeps the
+training, rollback and inference loop deterministic on local hardware.
+
 ## API
 
 Prediction:

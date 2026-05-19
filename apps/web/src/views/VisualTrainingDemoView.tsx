@@ -148,10 +148,36 @@ export function VisualTrainingDemoView({
           <Stat label="Rollbacks" value={String(snapshot.rollbackCount)} />
         </div>
 
-        <div className="grid gap-5 xl:grid-cols-[1.2fr_0.8fr]">
+        <div className="grid items-start gap-5 2xl:grid-cols-[minmax(0,1fr)_420px]">
           <section className="grid gap-5">
+            <Panel title="Experiment setup">
+              <div className="grid gap-3 lg:grid-cols-3">
+                <SetupCard
+                  title="Dataset"
+                  value="Airplanes vs ships"
+                  detail="Current demo uses a generated, labeled image dataset so the full adaptive loop runs quickly on a laptop."
+                />
+                <SetupCard
+                  title="Model"
+                  value="Tiny CNN"
+                  detail="Small convolutional classifier, intentionally lightweight for RTX 3060 live demonstrations."
+                />
+                <SetupCard
+                  title="Adaptive scenario"
+                  value="LR spike degradation"
+                  detail="ACN injects a bad training stage, detects validation degradation, rolls back and resumes from a stable checkpoint."
+                />
+              </div>
+              <div className="mt-4 grid gap-3 text-sm lg:grid-cols-4">
+                <ProcessStep label="1. Prepare data" value="Images are grouped by class label." />
+                <ProcessStep label="2. Train baseline" value="The model learns initial visual patterns." />
+                <ProcessStep label="3. Adapt" value="Controller watches metrics and checkpoint quality." />
+                <ProcessStep label="4. Use model" value="Upload an image and test the selected version." />
+              </div>
+            </Panel>
+
             <Panel title="Live training curves">
-              <div className="grid gap-5 lg:grid-cols-2">
+              <div className="grid gap-5 xl:grid-cols-2">
                 <Chart
                   data={snapshot.metrics}
                   lines={[
@@ -167,6 +193,7 @@ export function VisualTrainingDemoView({
                   ]}
                 />
               </div>
+              <TrainingDiagnostics snapshot={snapshot} />
             </Panel>
 
             <Panel title="Validation examples gallery">
@@ -488,6 +515,25 @@ function Stat({ label, value }: { label: string; value: string }) {
   );
 }
 
+function SetupCard({ title, value, detail }: { title: string; value: string; detail: string }) {
+  return (
+    <div className="rounded-md border border-slate-800 bg-slate-950 p-4">
+      <p className="text-xs font-semibold uppercase text-slate-500">{title}</p>
+      <p className="mt-2 text-lg font-semibold text-slate-100">{value}</p>
+      <p className="mt-2 text-sm leading-6 text-slate-400">{detail}</p>
+    </div>
+  );
+}
+
+function ProcessStep({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-md bg-slate-950 px-3 py-2">
+      <p className="font-medium text-cyan-300">{label}</p>
+      <p className="mt-1 text-slate-400">{value}</p>
+    </div>
+  );
+}
+
 function Panel({ title, children }: { title: string; children: ReactNode }) {
   return (
     <section className="rounded-lg border border-slate-800 bg-slate-900 p-4">
@@ -502,6 +548,28 @@ function KeyValue({ label, value }: { label: string; value: string }) {
     <div className="flex items-center justify-between gap-4 rounded-md bg-slate-950 px-3 py-2">
       <span className="text-slate-400">{label}</span>
       <span className="text-right font-medium">{value}</span>
+    </div>
+  );
+}
+
+function TrainingDiagnostics({ snapshot }: { snapshot: VisualDemoSnapshot }) {
+  const latestMetric = snapshot.metrics.at(-1);
+  const bestAccuracy =
+    snapshot.metrics.length === 0
+      ? 0
+      : Math.max(...snapshot.metrics.map((metric) => metric.accuracy));
+  const bestLoss =
+    snapshot.metrics.length === 0
+      ? 0
+      : Math.min(...snapshot.metrics.map((metric) => metric.validationLoss));
+  const checkpointCount = snapshot.checkpoints.length;
+
+  return (
+    <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+      <KeyValue label="Best accuracy" value={`${Math.round(bestAccuracy * 100)}%`} />
+      <KeyValue label="Best val loss" value={bestLoss === 0 ? "-" : bestLoss.toFixed(3)} />
+      <KeyValue label="Current LR" value={latestMetric ? latestMetric.learningRate.toFixed(4) : "-"} />
+      <KeyValue label="Checkpoints" value={String(checkpointCount)} />
     </div>
   );
 }

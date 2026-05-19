@@ -6,6 +6,10 @@ services:
     command: python -m uvicorn acn_api.main:create_app --factory --host 0.0.0.0 --port 8000
     env_file:
       - .env
+    environment:
+      ACN_RUNTIME_STACK_ENABLED: "true"
+      ACN_MINIO_ARTIFACT_BUCKET: acn-artifacts
+      ACN_MLFLOW_EXPERIMENT_NAME: ACN Visual Adaptive Demo
     ports:
       - "8000:8000"
     depends_on:
@@ -13,6 +17,10 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+      mlflow:
+        condition: service_healthy
+      create-minio-bucket:
+        condition: service_completed_successfully
 
   worker:
     build:
@@ -21,6 +29,9 @@ services:
     command: python -m acn_worker.main
     env_file:
       - .env
+    environment:
+      ACN_RUNTIME_STACK_ENABLED: "true"
+      ACN_MINIO_ARTIFACT_BUCKET: acn-artifacts
     depends_on:
       postgres:
         condition: service_healthy
@@ -114,6 +125,15 @@ services:
         condition: service_healthy
       create-minio-bucket:
         condition: service_completed_successfully
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:5000', timeout=2).read()\"",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 12
 
 volumes:
   postgres_data:
