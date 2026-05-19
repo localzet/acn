@@ -51,6 +51,16 @@ export function App() {
   const [darkMode, setDarkMode] = useState(true);
   const { snapshot, connection, error, refresh, submitOverride } = useDashboardData();
   const visualDemo = useVisualDemo();
+  const activeExperiment = snapshot.experiments[0];
+  const stats = useMemo(
+    () => [
+      { label: "Experiments", value: snapshot.experiments.length },
+      { label: "Commits", value: snapshot.commitGraph.nodes.length },
+      { label: "Branches", value: snapshot.branchGraph.nodes.length },
+      { label: "Decisions", value: snapshot.controllerDecisions.length },
+    ],
+    [snapshot],
+  );
 
   if (appConfig.demoMode) {
     return <DemoPresentationView playback={demoPlayback} />;
@@ -77,17 +87,6 @@ export function App() {
       />
     );
   }
-
-  const activeExperiment = snapshot.experiments[0];
-  const stats = useMemo(
-    () => [
-      { label: "Experiments", value: snapshot.experiments.length },
-      { label: "Commits", value: snapshot.commitGraph.nodes.length },
-      { label: "Branches", value: snapshot.branchGraph.nodes.length },
-      { label: "Decisions", value: snapshot.controllerDecisions.length },
-    ],
-    [snapshot],
-  );
 
   return (
     <div className={darkMode ? "dark" : ""}>
